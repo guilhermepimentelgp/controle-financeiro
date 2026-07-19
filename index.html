@@ -35,8 +35,23 @@
   }
   *{box-sizing:border-box;}
   html,body{overflow-x:hidden;max-width:100%;}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:3rem;transition:background .2s,color .2s;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:calc(64px + env(safe-area-inset-bottom));transition:background .2s,color .2s;}
   .wrap{max-width:640px;margin:0 auto;padding:1.25rem 1.1rem 0;width:100%;}
+  .tab-page{display:none;}
+  .tab-page.active{display:block;}
+  .bottom-nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    display:flex;max-width:640px;margin:0 auto;
+    background:var(--surface);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .nav-btn{
+    flex:1;background:none;border:none;padding:9px 0 8px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    color:var(--ink-soft);font-family:'Inter';font-size:.62rem;
+  }
+  .nav-btn .nav-ico{font-size:1.1rem;line-height:1;}
+  .nav-btn.active{color:var(--accent);font-weight:600;}
   .hidden{display:none !important;}
 
   /* login / lock */
@@ -161,48 +176,86 @@
     <div class="brand-icons">
       <span id="sync-status">online</span>
       <button class="icon-btn" id="theme-toggle">◐</button>
-      <button class="icon-btn" id="settings-toggle">⚙</button>
     </div>
   </div>
 
-  <div class="hero">
-    <div class="hero-top">
-      <div class="saldo-label">Total gasto no mês</div>
-      <div class="saldo-valor" id="total-mes">R$ 0,00</div>
-      <div class="cmp-row" id="cmp-mes"></div>
+  <div id="tab-inicio" class="tab-page active">
+    <div class="hero">
+      <div class="hero-top">
+        <div class="saldo-label">Total gasto no mês</div>
+        <div class="saldo-valor" id="total-mes">R$ 0,00</div>
+        <div class="cmp-row" id="cmp-mes"></div>
+      </div>
+      <div class="month-nav">
+        <button id="prev-month">‹</button>
+        <div class="month-label" id="month-label">—</div>
+        <button id="next-month">›</button>
+      </div>
+      <div class="mini-stats" id="mini-stats-contas"></div>
     </div>
-    <div class="month-nav">
-      <button id="prev-month">‹</button>
-      <div class="month-label" id="month-label">—</div>
-      <button id="next-month">›</button>
+
+    <div class="actions-row">
+      <button class="add-btn" id="toggle-form">+ Novo gasto</button>
     </div>
-    <div class="mini-stats" id="mini-stats-contas"></div>
+
+    <div class="section-title">Contas a vencer</div>
+    <div id="due-container"></div>
   </div>
 
-  <div class="actions-row">
-    <button class="add-btn" id="toggle-form">+ Novo gasto</button>
-    <button class="search-btn" id="toggle-search">⌕</button>
+  <div id="tab-lancamentos" class="tab-page">
+    <div class="actions-row">
+      <button class="search-btn" id="toggle-search" style="width:100%;">⌕ Buscar e filtrar</button>
+    </div>
+
+    <div class="panel" id="search-panel">
+      <h2>Buscar</h2>
+      <input id="s-texto" type="text" placeholder="Descrição...">
+      <div class="row2">
+        <div><label>Categoria</label><select id="s-categoria"><option value="">Todas</option></select></div>
+        <div><label>Conta</label><select id="s-conta"><option value="">Todas</option></select></div>
+      </div>
+      <div class="save-row">
+        <button class="btn-cancel" id="s-clear">Limpar</button>
+        <button class="btn-save" id="s-apply">Filtrar</button>
+      </div>
+    </div>
+
+    <div class="section-title">Lançamentos <span class="count" id="lanc-count"></span></div>
+    <div id="ledger-container"></div>
+
+    <button id="export-btn">Exportar lançamentos (CSV)</button>
   </div>
 
-  <div class="panel" id="search-panel">
-    <h2>Buscar</h2>
-    <input id="s-texto" type="text" placeholder="Descrição...">
-    <div class="row2">
-      <div><label>Categoria</label><select id="s-categoria"><option value="">Todas</option></select></div>
-      <div><label>Conta</label><select id="s-conta"><option value="">Todas</option></select></div>
+  <div id="tab-analises" class="tab-page">
+    <div class="section-title" style="margin-top:.2rem;">Maiores gastos do mês</div>
+    <div id="rank-container"></div>
+
+    <div class="section-title">Resumo do mês</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Por categoria</h3>
+        <div style="position:relative;height:170px;"><canvas id="chart-cat" role="img" aria-label="Gastos por categoria">Distribuição por categoria.</canvas></div>
+        <div class="legend" id="legend-cat"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Por conta</h3>
+        <div style="position:relative;height:170px;"><canvas id="chart-conta" role="img" aria-label="Gastos por conta">Distribuição por conta.</canvas></div>
+        <div class="legend" id="legend-conta"></div>
+      </div>
     </div>
-    <div class="save-row">
-      <button class="btn-cancel" id="s-clear">Limpar</button>
-      <button class="btn-save" id="s-apply">Filtrar</button>
+
+    <div class="section-title" style="margin-top:1rem;">Evolução (6 meses)</div>
+    <div class="chart-card" style="width:100%;">
+      <div style="position:relative;height:200px;"><canvas id="chart-evol" role="img" aria-label="Evolução de gastos nos últimos 6 meses">Evolução mensal.</canvas></div>
     </div>
   </div>
 
-  <div class="panel" id="settings-panel">
-    <h2>Categorias</h2>
+  <div id="tab-ajustes" class="tab-page">
+    <div class="section-title" style="margin-top:.2rem;">Categorias</div>
     <div class="chip-row" id="cat-chips"></div>
     <div class="add-chip-row"><input id="new-cat" placeholder="Nova categoria"><button id="add-cat">+</button></div>
 
-    <h2 style="margin-top:1.4rem;">Contas / formas de pagamento</h2>
+    <div class="section-title">Contas / formas de pagamento</div>
     <div class="chip-row" id="acc-chips"></div>
     <div class="add-chip-row"><input id="new-acc" placeholder="Nome da conta"><button id="add-acc">+</button></div>
     <label>Tipo da nova conta</label>
@@ -214,7 +267,7 @@
       <option value="ticket">Ticket</option>
     </select>
 
-    <h2 style="margin-top:1.4rem;">Segurança</h2>
+    <div class="section-title">Segurança</div>
     <div id="pin-status" style="font-size:.83rem;color:var(--ink-soft);margin-bottom:.6rem;"></div>
     <div class="save-row">
       <button class="btn-cancel" id="pin-remove">Remover PIN</button>
@@ -261,35 +314,12 @@
     </div>
   </div>
 
-  <div class="section-title">Contas a vencer</div>
-  <div id="due-container"></div>
-
-  <div class="section-title">Maiores gastos do mês</div>
-  <div id="rank-container"></div>
-
-  <div class="section-title">Resumo do mês</div>
-  <div class="charts-grid">
-    <div class="chart-card">
-      <h3>Por categoria</h3>
-      <div style="position:relative;height:170px;"><canvas id="chart-cat" role="img" aria-label="Gastos por categoria">Distribuição por categoria.</canvas></div>
-      <div class="legend" id="legend-cat"></div>
-    </div>
-    <div class="chart-card">
-      <h3>Por conta</h3>
-      <div style="position:relative;height:170px;"><canvas id="chart-conta" role="img" aria-label="Gastos por conta">Distribuição por conta.</canvas></div>
-      <div class="legend" id="legend-conta"></div>
-    </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-tab="tab-inicio"><span class="nav-ico">⌂</span><span>Início</span></button>
+    <button class="nav-btn" data-tab="tab-lancamentos"><span class="nav-ico">☰</span><span>Lançamentos</span></button>
+    <button class="nav-btn" data-tab="tab-analises"><span class="nav-ico">◔</span><span>Análises</span></button>
+    <button class="nav-btn" data-tab="tab-ajustes"><span class="nav-ico">⚙</span><span>Ajustes</span></button>
   </div>
-
-  <div class="section-title" style="margin-top:1rem;">Evolução (6 meses)</div>
-  <div class="chart-card" style="width:100%;">
-    <div style="position:relative;height:200px;"><canvas id="chart-evol" role="img" aria-label="Evolução de gastos nos últimos 6 meses">Evolução mensal.</canvas></div>
-  </div>
-
-  <div class="section-title">Lançamentos <span class="count" id="lanc-count"></span></div>
-  <div id="ledger-container"></div>
-
-  <button id="export-btn">Exportar lançamentos (CSV)</button>
 
 </div>
 
@@ -456,8 +486,16 @@ $('theme-toggle').addEventListener('click', async () => {
   await saveSettings();
 });
 
-// ---------- SETTINGS PANEL ----------
-$('settings-toggle').addEventListener('click', () => $('settings-panel').classList.toggle('open'));
+// ---------- ABAS ----------
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b === btn));
+    window.scrollTo({top:0, behavior:'instant'});
+  });
+});
+
+// ---------- SETTINGS (aba Ajustes) ----------
 
 function renderSettingsPanel(){
   $('cat-chips').innerHTML = categories.map(c => `<span class="chip">${c.icon||'✳'} ${escapeHtml(c.name)}<button onclick="deleteCategory('${c.id}')">×</button></span>`).join('');
@@ -507,7 +545,6 @@ $('toggle-form').addEventListener('click', () => {
   $('f-data').value = new Date().toISOString().slice(0,10);
   $('form-panel').classList.add('open');
   $('search-panel').classList.remove('open');
-  $('settings-panel').classList.remove('open');
 });
 $('cancel-form').addEventListener('click', () => { $('form-panel').classList.remove('open'); clearForm(); });
 document.querySelectorAll('.status-toggle button').forEach(b => b.addEventListener('click', () => {
