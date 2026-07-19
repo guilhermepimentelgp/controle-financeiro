@@ -63,12 +63,12 @@
   .hero-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.9rem;}
   .month-nav{display:flex;align-items:center;gap:.4rem;flex-shrink:0;}
   .month-nav button{background:none;border:1px solid var(--line);border-radius:8px;width:26px;height:26px;flex-shrink:0;color:var(--ink);cursor:pointer;font-size:.9rem;padding:0;}
-  .month-label{font-family:'Fraunces',serif;font-size:.78rem;font-weight:500;min-width:0;text-align:center;text-transform:capitalize;white-space:nowrap;}
+  .month-label{font-family:'Fraunces',serif;font-size:.72rem;font-weight:500;width:82px;flex-shrink:0;text-align:center;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .hero-top > div:first-child{flex:1;min-width:0;}
   .saldo-label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.15rem;}
   .saldo-valor{font-family:'IBM Plex Mono',monospace;font-size:clamp(1.4rem,7vw,2rem);font-weight:500;line-height:1;color:var(--despesa);white-space:nowrap;}
   @media (max-width:360px){
-    .month-label{font-size:.7rem;}
+    .month-label{font-size:.64rem;width:72px;}
     .hero{padding:1.1rem 1rem .9rem;}
   }
   .cmp-row{font-size:.75rem;color:var(--ink-soft);margin-top:.5rem;}
