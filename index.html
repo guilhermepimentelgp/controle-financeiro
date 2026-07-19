@@ -60,20 +60,19 @@
   #sync-status{font-size:.65rem;color:var(--ink-soft);}
 
   .hero{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.4rem 1.4rem 1.1rem;margin-bottom:1rem;}
-  .hero-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.9rem;}
-  .month-nav{display:flex;align-items:center;gap:.4rem;flex-shrink:0;}
-  .month-nav button{background:none;border:1px solid var(--line);border-radius:8px;width:26px;height:26px;flex-shrink:0;color:var(--ink);cursor:pointer;font-size:.9rem;padding:0;}
-  .month-label{font-family:'Fraunces',serif;font-size:.72rem;font-weight:500;width:82px;flex-shrink:0;text-align:center;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .hero-top > div:first-child{flex:1;min-width:0;}
+  .hero-top{margin-bottom:1rem;}
+  .month-nav{display:flex;align-items:center;justify-content:center;gap:14px;padding:.6rem 0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);margin-bottom:.9rem;}
+  .month-nav button{background:none;border:1px solid var(--line);border-radius:8px;width:28px;height:28px;flex-shrink:0;color:var(--ink);cursor:pointer;font-size:.95rem;padding:0;}
+  .month-label{font-family:'Fraunces',serif;font-size:.9rem;font-weight:600;text-align:center;text-transform:capitalize;white-space:nowrap;color:var(--ink);}
   .saldo-label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.15rem;}
-  .saldo-valor{font-family:'IBM Plex Mono',monospace;font-size:clamp(1.4rem,7vw,2rem);font-weight:500;line-height:1;color:var(--despesa);white-space:nowrap;}
+  .saldo-valor{font-family:'IBM Plex Mono',monospace;font-size:clamp(1.6rem,8vw,2.1rem);font-weight:500;line-height:1;color:var(--despesa);}
   @media (max-width:360px){
-    .month-label{font-size:.64rem;width:72px;}
+    .month-label{font-size:.8rem;}
     .hero{padding:1.1rem 1rem .9rem;}
   }
   .cmp-row{font-size:.75rem;color:var(--ink-soft);margin-top:.5rem;}
   .cmp-row b{color:var(--ink);}
-  .mini-stats{display:flex;gap:.7rem;margin-top:1rem;padding-top:.9rem;border-top:1px dashed var(--line);flex-wrap:wrap;}
+  .mini-stats{display:flex;gap:.7rem;flex-wrap:wrap;}
   .mini-stat{background:var(--surface-2);border-radius:9px;padding:.55rem .7rem;flex:1;min-width:90px;}
   .mini-stat .l{font-size:.65rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
   .mini-stat .v{font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:500;margin-top:.1rem;}
@@ -168,16 +167,14 @@
 
   <div class="hero">
     <div class="hero-top">
-      <div>
-        <div class="saldo-label">Total gasto no mês</div>
-        <div class="saldo-valor" id="total-mes">R$ 0,00</div>
-        <div class="cmp-row" id="cmp-mes"></div>
-      </div>
-      <div class="month-nav">
-        <button id="prev-month">‹</button>
-        <div class="month-label" id="month-label">—</div>
-        <button id="next-month">›</button>
-      </div>
+      <div class="saldo-label">Total gasto no mês</div>
+      <div class="saldo-valor" id="total-mes">R$ 0,00</div>
+      <div class="cmp-row" id="cmp-mes"></div>
+    </div>
+    <div class="month-nav">
+      <button id="prev-month">‹</button>
+      <div class="month-label" id="month-label">—</div>
+      <button id="next-month">›</button>
     </div>
     <div class="mini-stats" id="mini-stats-contas"></div>
   </div>
