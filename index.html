@@ -162,6 +162,22 @@
   .empty-state{text-align:center;padding:2rem 1rem;color:var(--ink-soft);font-size:.85rem;}
   .mark-pago{border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:.3rem .55rem;font-size:.65rem;color:var(--ink-soft);cursor:pointer;margin-top:.25rem;}
 
+  .fatura-invoice{border-top:1px solid var(--line);}
+  .fatura-invoice:first-child{border-top:none;}
+  .fatura-invoice-head{display:flex;justify-content:space-between;align-items:center;padding:.7rem 0;cursor:pointer;}
+  .fatura-invoice-head .fi-label{font-size:.85rem;font-weight:500;}
+  .fatura-invoice-head .fi-val{font-family:'IBM Plex Mono',monospace;font-size:.85rem;}
+  .fatura-invoice-detail{display:none;padding:0 0 .7rem;}
+  .fatura-invoice-detail.open{display:block;}
+  .fatura-invoice-detail .fid-row{display:flex;justify-content:space-between;font-size:.78rem;color:var(--ink-soft);padding:.3rem 0;}
+  .badge-aberta{font-size:.6rem;color:var(--pendente);background:var(--pendente-bg);padding:1px 6px;border-radius:5px;margin-left:.4rem;}
+
+  .lr-menu-wrap{position:relative;flex-shrink:0;}
+  .lr-menu-btn{background:none;border:none;color:var(--ink-soft);font-size:1rem;cursor:pointer;padding:.2rem .4rem;}
+  .lr-menu{display:none;position:absolute;right:0;top:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:15;min-width:100px;overflow:hidden;}
+  .lr-menu.open{display:block;}
+  .lr-menu button{display:block;width:100%;text-align:left;padding:.55rem .8rem;background:none;border:none;font-size:.8rem;color:var(--ink);cursor:pointer;}
+  .lr-menu button:hover{background:var(--surface-2);}
   #export-btn{width:100%;padding:.7rem;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:.82rem;cursor:pointer;margin-top:1rem;}
   ::-webkit-scrollbar{display:none;}
 </style>
@@ -208,10 +224,7 @@
             <div class="fatura-valor" id="fatura-valor">R$ 0,00</div>
             <div class="cmp-row" id="fatura-fecha"></div>
           </div>
-          <div class="fatura-history">
-            <div class="fh-title">Faturas anteriores</div>
-            <div id="fatura-history-list"></div>
-          </div>
+          <button id="open-fatura-panel" style="width:100%;margin-top:.7rem;padding:.5rem;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);font-size:.78rem;cursor:pointer;">Consulte suas faturas</button>
         </div>
       </div>
       <div class="hero-dots" id="hero-dots"><span class="active"></span><span></span></div>
@@ -232,7 +245,10 @@
   </div>
 
   <div id="tab-lancamentos" class="tab-page">
-    <div class="actions-row">
+    <div class="section-title" style="margin-top:.2rem;">Últimos lançamentos</div>
+    <div id="recent-container"></div>
+
+    <div class="actions-row" style="margin-top:1.2rem;">
       <button class="search-btn" id="toggle-search" style="width:100%;">⌕ Buscar e filtrar</button>
     </div>
 
@@ -242,6 +258,10 @@
       <div class="row2">
         <div><label>Categoria</label><select id="s-categoria"><option value="">Todas</option></select></div>
         <div><label>Conta</label><select id="s-conta"><option value="">Todas</option></select></div>
+      </div>
+      <div class="row2">
+        <div><label>Mês</label><select id="s-mes"><option value="">Todos</option></select></div>
+        <div><label>Ano</label><select id="s-ano"><option value="">Todos</option></select></div>
       </div>
       <div class="save-row">
         <button class="btn-cancel" id="s-clear">Limpar</button>
@@ -351,6 +371,14 @@
     </div>
   </div>
 
+  <div class="panel" id="fatura-panel">
+    <h2>Suas faturas</h2>
+    <div id="fatura-list"></div>
+    <div class="save-row">
+      <button class="btn-cancel" id="close-fatura-panel" style="flex:1;">Fechar</button>
+    </div>
+  </div>
+
   <div class="bottom-nav">
     <button class="nav-btn active" data-tab="tab-inicio"><span class="nav-ico">⌂</span><span>Início</span></button>
     <button class="nav-btn" data-tab="tab-lancamentos"><span class="nav-ico">☰</span><span>Lançamentos</span></button>
@@ -395,7 +423,7 @@ let currentMonth = new Date();
 let formType_status = 'pago';
 let pinBuffer = '';
 let pinMode = 'unlock'; // 'unlock' | 'setup'
-let activeFilters = {texto:'', categoria:'', conta:''};
+let activeFilters = {texto:'', categoria:'', conta:'', mes:'', ano:''};
 let editingId = null;
 let chartCat, chartConta, chartEvol;
 
@@ -535,6 +563,13 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
   });
 });
 
+// ---------- PAINEL DE FATURAS ----------
+$('open-fatura-panel').addEventListener('click', () => {
+  renderFaturaList();
+  $('fatura-panel').classList.add('open');
+});
+$('close-fatura-panel').addEventListener('click', () => $('fatura-panel').classList.remove('open'));
+
 // ---------- CARROSSEL FATURA / TOTAL ----------
 const heroSwipe = $('hero-swipe');
 heroSwipe.addEventListener('scroll', () => {
@@ -592,6 +627,12 @@ function populateSelects(){
   $('f-conta').innerHTML = accOpts;
   $('s-categoria').innerHTML = '<option value="">Todas</option>' + catOpts;
   $('s-conta').innerHTML = '<option value="">Todas</option>' + accOpts;
+
+  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  $('s-mes').innerHTML = '<option value="">Todos</option>' + monthNames.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  const nowY = new Date().getFullYear();
+  const years = []; for(let y=nowY-3; y<=nowY+1; y++) years.push(y);
+  $('s-ano').innerHTML = '<option value="">Todos</option>' + years.map(y=>`<option value="${y}">${y}</option>`).join('');
 }
 
 // ---------- FORM ----------
@@ -704,13 +745,13 @@ window.markPago = async (id) => {
 // ---------- SEARCH ----------
 $('toggle-search').addEventListener('click', () => { $('search-panel').classList.toggle('open'); $('form-panel').classList.remove('open'); });
 $('s-apply').addEventListener('click', () => {
-  activeFilters = {texto: $('s-texto').value.trim().toLowerCase(), categoria: $('s-categoria').value, conta: $('s-conta').value};
+  activeFilters = {texto: $('s-texto').value.trim().toLowerCase(), categoria: $('s-categoria').value, conta: $('s-conta').value, mes: $('s-mes').value, ano: $('s-ano').value};
   $('search-panel').classList.remove('open');
   render();
 });
 $('s-clear').addEventListener('click', () => {
-  activeFilters = {texto:'', categoria:'', conta:''};
-  $('s-texto').value=''; $('s-categoria').value=''; $('s-conta').value='';
+  activeFilters = {texto:'', categoria:'', conta:'', mes:'', ano:''};
+  $('s-texto').value=''; $('s-categoria').value=''; $('s-conta').value=''; $('s-mes').value=''; $('s-ano').value='';
   render();
 });
 
@@ -745,7 +786,15 @@ function monthTx(offset){
   return transactions.filter(t => mk(t.date) === key);
 }
 function filteredMonthTx(){
-  let list = monthTx(0);
+  let list;
+  if(activeFilters.mes || activeFilters.ano){
+    const mm = activeFilters.mes || String(currentMonth.getMonth()+1);
+    const yy = activeFilters.ano || String(currentMonth.getFullYear());
+    const key = yy + '-' + String(mm).padStart(2,'0');
+    list = transactions.filter(t => mk(t.date) === key);
+  } else {
+    list = monthTx(0);
+  }
   if(activeFilters.texto) list = list.filter(t => t.desc.toLowerCase().includes(activeFilters.texto));
   if(activeFilters.categoria) list = list.filter(t => t.categoryId === activeFilters.categoria);
   if(activeFilters.conta) list = list.filter(t => t.accountId === activeFilters.conta);
@@ -784,15 +833,47 @@ function renderFatura(){
 
   $('fatura-valor').textContent = fmtBRL(grouped[todayKey] || 0);
   $('fatura-fecha').textContent = 'fecha em ' + invoiceClosingDate(todayKey, closingDay);
-
-  const pastKeys = Object.keys(grouped).filter(k => k !== todayKey).sort().reverse();
-  const listEl = $('fatura-history-list');
-  if(pastKeys.length === 0){
-    listEl.innerHTML = '<div class="fh-row" style="border-top:none;color:var(--ink-soft);">Nenhuma fatura fechada ainda.</div>';
-  } else {
-    listEl.innerHTML = pastKeys.map(k => `<div class="fh-row"><span>${invoiceLabel(k)}</span><span>${fmtBRL(grouped[k])}</span></div>`).join('');
-  }
 }
+
+function renderFaturaList(){
+  const closingDay = settings.closingDay || 30;
+  const creditoTx = creditoTransactions();
+  const todayKey = invoiceKeyFor(new Date().toISOString().slice(0,10), closingDay);
+
+  const grouped = {};
+  creditoTx.forEach(t => {
+    const key = invoiceKeyFor(t.date, closingDay);
+    if(!grouped[key]) grouped[key] = [];
+    grouped[key].push(t);
+  });
+
+  const keys = Object.keys(grouped).sort().reverse();
+  const listEl = $('fatura-list');
+  if(keys.length === 0){
+    listEl.innerHTML = '<div class="empty-state">Nenhum gasto no crédito ainda.</div>';
+    return;
+  }
+  listEl.innerHTML = keys.map(k => {
+    const txs = grouped[k].sort((a,b)=>b.date.localeCompare(a.date));
+    const total = txs.reduce((s,t)=>s+t.valor,0);
+    const isOpen = k === todayKey;
+    const rows = txs.map(t => {
+      const dt = new Date(t.date+'T00:00:00');
+      return `<div class="fid-row"><span>${escapeHtml(t.desc)} · ${dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span><span>${fmtBRL(t.valor)}</span></div>`;
+    }).join('');
+    return `<div class="fatura-invoice">
+      <div class="fatura-invoice-head" onclick="toggleInvoice('${k}')">
+        <span class="fi-label">${invoiceLabel(k)}${isOpen ? '<span class="badge-aberta">aberta</span>' : ''}</span>
+        <span class="fi-val">${fmtBRL(total)}</span>
+      </div>
+      <div class="fatura-invoice-detail" id="inv-${k}">${rows}</div>
+    </div>`;
+  }).join('');
+}
+window.toggleInvoice = (key) => {
+  const el = document.getElementById('inv-'+key);
+  if(el) el.classList.toggle('open');
+};
 
 function render(){
   $('month-label').textContent = currentMonth.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
@@ -822,6 +903,7 @@ function render(){
   renderCharts(cur, byAcc);
   renderEvolution();
   renderLedger();
+  renderRecent();
 }
 
 function renderDue(){
@@ -893,26 +975,47 @@ function renderEvolution(){
   });
 }
 
+function ledgerRowHTML(t){
+  const dt = new Date(t.date+'T00:00:00');
+  const badge = t.status==='pendente' ? '<span class="badge badge-pendente">pendente</span>' : '';
+  const recBadge = t.recurringId ? `<span class="badge badge-rec">${t.seq}/${t.total}</span>` : '';
+  return `<div class="ledger-row">
+    <div class="lr-cat">${catIcon(t.categoryId)}</div>
+    <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
+      <div class="lr-meta">${dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} · ${escapeHtml(catName(t.categoryId))} · ${escapeHtml(accName(t.accountId))}</div></div>
+    <div class="lr-val">${fmtBRL(t.valor)}</div>
+    <div class="lr-menu-wrap">
+      <button class="lr-menu-btn" onclick="toggleRowMenu(event,'${t.id}')" aria-label="Mais opções">⋮</button>
+      <div class="lr-menu" id="menu-${t.id}">
+        <button onclick="closeRowMenus();editTransaction('${t.id}')">Editar</button>
+        <button onclick="closeRowMenus();deleteTransaction('${t.id}')">Excluir</button>
+      </div>
+    </div>
+  </div>`;
+}
+window.toggleRowMenu = (e, id) => {
+  e.stopPropagation();
+  const el = document.getElementById('menu-'+id);
+  const wasOpen = el && el.classList.contains('open');
+  closeRowMenus();
+  if(el && !wasOpen) el.classList.add('open');
+};
+window.closeRowMenus = () => { document.querySelectorAll('.lr-menu.open').forEach(m => m.classList.remove('open')); };
+document.addEventListener('click', closeRowMenus);
+
+function renderRecent(){
+  const list = [...transactions].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  const c = $('recent-container');
+  if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento ainda.</div>'; return; }
+  c.innerHTML = '<div class="ledger">' + list.map(ledgerRowHTML).join('') + '</div>';
+}
+
 function renderLedger(){
   const list = filteredMonthTx().sort((a,b)=>b.date.localeCompare(a.date));
   $('lanc-count').textContent = list.length ? list.length+' item'+(list.length>1?'s':'') : '';
   const c = $('ledger-container');
-  if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento neste mês.<br>Toque em "Novo gasto" para começar.</div>'; return; }
-  c.innerHTML = '<div class="ledger">' + list.map(t => {
-    const dt = new Date(t.date+'T00:00:00');
-    const badge = t.status==='pendente' ? '<span class="badge badge-pendente">pendente</span>' : '';
-    const recBadge = t.recurringId ? `<span class="badge badge-rec">${t.seq}/${t.total}</span>` : '';
-    return `<div class="ledger-row">
-      <div class="lr-cat">${catIcon(t.categoryId)}</div>
-      <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
-        <div class="lr-meta">${dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} · ${escapeHtml(catName(t.categoryId))} · ${escapeHtml(accName(t.accountId))}</div></div>
-      <div class="lr-val">${fmtBRL(t.valor)}</div>
-      <div class="lr-actions">
-        <button onclick="editTransaction('${t.id}')" aria-label="Editar">✎</button>
-        <button onclick="deleteTransaction('${t.id}')" aria-label="Excluir">×</button>
-      </div>
-    </div>`;
-  }).join('') + '</div>';
+  if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento neste período.<br>Toque em "Novo gasto" para começar.</div>'; return; }
+  c.innerHTML = '<div class="ledger">' + list.map(ledgerRowHTML).join('') + '</div>';
 }
 
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
