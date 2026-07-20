@@ -74,7 +74,19 @@
   .icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;}
   #sync-status{font-size:.65rem;color:var(--ink-soft);}
 
-  .hero{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.4rem 1.4rem 1.1rem;margin-bottom:1rem;}
+  .hero{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.4rem 1.4rem 1.1rem;margin-bottom:1rem;overflow:hidden;}
+  .hero-swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -1.4rem;}
+  .hero-swipe::-webkit-scrollbar{display:none;}
+  .hero-page{flex:0 0 100%;scroll-snap-align:start;padding:0 1.4rem;min-width:0;}
+  .hero-dots{display:flex;justify-content:center;gap:6px;margin-top:.7rem;}
+  .hero-dots span{width:6px;height:6px;border-radius:50%;background:var(--line);}
+  .hero-dots span.active{background:var(--ink);}
+  .fatura-valor{font-family:'IBM Plex Mono',monospace;font-size:clamp(1.6rem,8vw,2.1rem);font-weight:500;line-height:1;color:var(--ink);}
+  .fatura-history{border-top:1px dashed var(--line);margin-top:.9rem;padding-top:.7rem;}
+  .fatura-history .fh-title{font-size:.68rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;}
+  .fh-row{display:flex;justify-content:space-between;padding:.4rem 0;border-top:1px solid var(--line);font-size:.8rem;}
+  .fh-row:first-of-type{border-top:none;}
+  .fh-row span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
   .hero-top{margin-bottom:1rem;}
   .month-nav{display:flex;align-items:center;justify-content:center;gap:14px;padding:.6rem 0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);margin-bottom:.9rem;}
   .month-nav button{background:none;border:1px solid var(--line);border-radius:8px;width:28px;height:28px;flex-shrink:0;color:var(--ink);cursor:pointer;font-size:.95rem;padding:0;}
@@ -167,6 +179,7 @@
   <div class="pin-dots" id="pin-dots"></div>
   <div class="pin-pad" id="pin-pad"></div>
   <div class="pin-err" id="pin-err"></div>
+  <button class="mark-pago hidden" id="pin-cancel" style="margin-top:1.2rem;padding:.5rem 1.2rem;">Cancelar</button>
 </div>
 
 <div id="app" class="wrap hidden">
@@ -181,11 +194,27 @@
 
   <div id="tab-inicio" class="tab-page active">
     <div class="hero">
-      <div class="hero-top">
-        <div class="saldo-label">Total gasto no mês</div>
-        <div class="saldo-valor" id="total-mes">R$ 0,00</div>
-        <div class="cmp-row" id="cmp-mes"></div>
+      <div class="hero-swipe" id="hero-swipe">
+        <div class="hero-page">
+          <div class="hero-top">
+            <div class="saldo-label">Total gasto no mês</div>
+            <div class="saldo-valor" id="total-mes">R$ 0,00</div>
+            <div class="cmp-row" id="cmp-mes"></div>
+          </div>
+        </div>
+        <div class="hero-page">
+          <div class="hero-top">
+            <div class="saldo-label">Fatura aberta</div>
+            <div class="fatura-valor" id="fatura-valor">R$ 0,00</div>
+            <div class="cmp-row" id="fatura-fecha"></div>
+          </div>
+          <div class="fatura-history">
+            <div class="fh-title">Faturas anteriores</div>
+            <div id="fatura-history-list"></div>
+          </div>
+        </div>
       </div>
+      <div class="hero-dots" id="hero-dots"><span class="active"></span><span></span></div>
       <div class="month-nav">
         <button id="prev-month">‹</button>
         <div class="month-label" id="month-label">—</div>
@@ -266,6 +295,14 @@
       <option value="credito">Cartão de crédito</option>
       <option value="ticket">Ticket</option>
     </select>
+
+    <div class="section-title">Cartão de crédito</div>
+    <label>Dia de fechamento da fatura</label>
+    <div class="row2">
+      <div><input id="closing-day" type="number" min="1" max="31" placeholder="30"></div>
+      <div style="display:flex;"><button class="btn-save" id="save-closing-day" style="flex:1;border-radius:8px;">Salvar</button></div>
+    </div>
+    <div id="closing-day-status" style="font-size:.75rem;color:var(--ink-soft);margin-top:.4rem;"></div>
 
     <div class="section-title">Segurança</div>
     <div id="pin-status" style="font-size:.83rem;color:var(--ink-soft);margin-bottom:.6rem;"></div>
@@ -400,6 +437,7 @@ const col = name => db.collection('users').doc(uid).collection(name);
 async function loadSettings(){
   const doc = await db.collection('users').doc(uid).collection('meta').doc('settings').get();
   settings = doc.exists ? doc.data() : {theme:'light', pinHash:null};
+  if(!settings.closingDay) settings.closingDay = 30;
   applyTheme();
 }
 async function saveSettings(){
@@ -441,9 +479,11 @@ function showLock(mode){
   $('lock-screen').classList.remove('hidden');
   $('app').classList.add('hidden');
   $('pin-err').textContent = '';
+  $('pin-cancel').classList.toggle('hidden', mode !== 'setup');
   renderPinDots();
   renderPinPad();
 }
+$('pin-cancel').addEventListener('click', () => { showApp(); });
 function renderPinDots(){
   $('pin-dots').innerHTML = [0,1,2,3].map(i => `<div class="pin-dot ${i < pinBuffer.length ? 'filled':''}"></div>`).join('');
 }
@@ -495,13 +535,30 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
   });
 });
 
+// ---------- CARROSSEL FATURA / TOTAL ----------
+const heroSwipe = $('hero-swipe');
+heroSwipe.addEventListener('scroll', () => {
+  const idx = Math.round(heroSwipe.scrollLeft / heroSwipe.clientWidth);
+  document.querySelectorAll('#hero-dots span').forEach((d,i) => d.classList.toggle('active', i===idx));
+});
+
 // ---------- SETTINGS (aba Ajustes) ----------
 
 function renderSettingsPanel(){
   $('cat-chips').innerHTML = categories.map(c => `<span class="chip">${c.icon||'✳'} ${escapeHtml(c.name)}<button onclick="deleteCategory('${c.id}')">×</button></span>`).join('');
   $('acc-chips').innerHTML = accounts.map(a => `<span class="chip">${a.icon||'💳'} ${escapeHtml(a.name)}<button onclick="deleteAccount('${a.id}')">×</button></span>`).join('');
   $('pin-status').textContent = settings.pinHash ? 'PIN ativado.' : 'Nenhum PIN definido.';
+  $('closing-day').value = settings.closingDay || 30;
+  $('closing-day-status').textContent = '';
 }
+$('save-closing-day').addEventListener('click', async () => {
+  let day = parseInt($('closing-day').value);
+  if(!day || day < 1 || day > 31){ alert('Informe um dia entre 1 e 31.'); return; }
+  settings.closingDay = day;
+  await saveSettings();
+  $('closing-day-status').textContent = 'Salvo.';
+  render();
+});
 $('add-cat').addEventListener('click', async () => {
   const name = $('new-cat').value.trim();
   if(!name) return;
@@ -695,6 +752,48 @@ function filteredMonthTx(){
   return list;
 }
 
+// ---------- FATURA (crédito) ----------
+function invoiceKeyFor(dateStr, closingDay){
+  const d = new Date(dateStr+'T00:00:00');
+  let y = d.getFullYear(), m = d.getMonth();
+  if(d.getDate() > closingDay){ m += 1; if(m > 11){ m = 0; y += 1; } }
+  return y + '-' + String(m+1).padStart(2,'0');
+}
+function invoiceLabel(key){
+  const [y,m] = key.split('-').map(Number);
+  return new Date(y, m-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+}
+function invoiceClosingDate(key, closingDay){
+  const [y,m] = key.split('-').map(Number);
+  return new Date(y, m-1, closingDay).toLocaleDateString('pt-BR', {day:'2-digit', month:'long'});
+}
+function creditoTransactions(){
+  const creditoIds = new Set(accounts.filter(a => a.kind === 'credito').map(a => a.id));
+  return transactions.filter(t => creditoIds.has(t.accountId));
+}
+function renderFatura(){
+  const closingDay = settings.closingDay || 30;
+  const creditoTx = creditoTransactions();
+  const todayKey = invoiceKeyFor(new Date().toISOString().slice(0,10), closingDay);
+
+  const grouped = {};
+  creditoTx.forEach(t => {
+    const key = invoiceKeyFor(t.date, closingDay);
+    grouped[key] = (grouped[key]||0) + t.valor;
+  });
+
+  $('fatura-valor').textContent = fmtBRL(grouped[todayKey] || 0);
+  $('fatura-fecha').textContent = 'fecha em ' + invoiceClosingDate(todayKey, closingDay);
+
+  const pastKeys = Object.keys(grouped).filter(k => k !== todayKey).sort().reverse();
+  const listEl = $('fatura-history-list');
+  if(pastKeys.length === 0){
+    listEl.innerHTML = '<div class="fh-row" style="border-top:none;color:var(--ink-soft);">Nenhuma fatura fechada ainda.</div>';
+  } else {
+    listEl.innerHTML = pastKeys.map(k => `<div class="fh-row"><span>${invoiceLabel(k)}</span><span>${fmtBRL(grouped[k])}</span></div>`).join('');
+  }
+}
+
 function render(){
   $('month-label').textContent = currentMonth.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const cur = monthTx(0);
@@ -718,6 +817,7 @@ function render(){
   ).join('') || '<div class="mini-stat"><div class="l">Sem gastos ainda</div></div>';
 
   renderDue();
+  renderFatura();
   renderRanking(cur);
   renderCharts(cur, byAcc);
   renderEvolution();
