@@ -108,7 +108,17 @@
   .add-btn{flex:1;padding:.85rem;border-radius:12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-family:'Inter';font-weight:500;font-size:.88rem;cursor:pointer;}
   .search-btn{width:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:1rem;cursor:pointer;}
 
-  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.1rem;margin-bottom:1rem;display:none;}
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.18);z-index:40;display:none;}
+  .sheet-backdrop.open{display:block;}
+  .panel{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;max-width:640px;margin:0 auto;
+    background:var(--surface);border:1px solid var(--line);border-bottom:none;
+    border-top-left-radius:18px;border-top-right-radius:18px;
+    padding:.9rem 1.1rem calc(1.4rem + env(safe-area-inset-bottom));
+    max-height:80vh;overflow-y:auto;display:none;
+    box-shadow:0 -6px 20px rgba(0,0,0,.12);
+  }
+  .panel::before{content:'';display:block;width:36px;height:4px;background:var(--line);border-radius:3px;margin:0 auto .9rem;}
   .panel.open{display:block;}
   .panel h2{font-family:'Fraunces',serif;font-size:1rem;font-weight:600;margin:0 0 .9rem;}
   label{display:block;font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:.7rem 0 .3rem;}
@@ -199,6 +209,7 @@
 </div>
 
 <div id="app" class="wrap hidden">
+  <div class="sheet-backdrop" id="sheet-backdrop"></div>
 
   <div class="brand">
     <h1>Controle Financeiro</h1>
@@ -425,6 +436,17 @@ let editingId = null;
 let chartCat, chartConta, chartEvol;
 
 const $ = id => document.getElementById(id);
+
+function openSheet(id){
+  document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
+  $(id).classList.add('open');
+  $('sheet-backdrop').classList.add('open');
+}
+function closeSheets(){
+  document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
+  $('sheet-backdrop').classList.remove('open');
+}
+$('sheet-backdrop').addEventListener('click', closeSheets);
 const fmtBRL = v => (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 const mk = d => { const dt = new Date(d+'T00:00:00'); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); };
 const curMK = () => currentMonth.getFullYear()+'-'+String(currentMonth.getMonth()+1).padStart(2,'0');
@@ -554,6 +576,7 @@ $('theme-toggle').addEventListener('click', async () => {
 // ---------- ABAS ----------
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    closeSheets();
     document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b === btn));
     window.scrollTo({top:0, behavior:'instant'});
@@ -563,9 +586,9 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 // ---------- PAINEL DE FATURAS ----------
 $('open-fatura-panel').addEventListener('click', () => {
   renderFaturaList();
-  $('fatura-panel').classList.add('open');
+  openSheet('fatura-panel');
 });
-$('close-fatura-panel').addEventListener('click', () => $('fatura-panel').classList.remove('open'));
+$('close-fatura-panel').addEventListener('click', closeSheets);
 
 // ---------- CARROSSEL FATURA / TOTAL ----------
 const heroSwipe = $('hero-swipe');
@@ -638,10 +661,9 @@ $('toggle-form').addEventListener('click', () => {
   $('form-title').textContent = 'Novo gasto';
   clearForm();
   $('f-data').value = new Date().toISOString().slice(0,10);
-  $('form-panel').classList.add('open');
-  $('search-panel').classList.remove('open');
+  openSheet('form-panel');
 });
-$('cancel-form').addEventListener('click', () => { $('form-panel').classList.remove('open'); clearForm(); });
+$('cancel-form').addEventListener('click', () => { closeSheets(); clearForm(); });
 document.querySelectorAll('.status-toggle button').forEach(b => b.addEventListener('click', () => {
   formType_status = b.dataset.s;
   document.querySelectorAll('.status-toggle button').forEach(x => x.classList.toggle('active', x===b));
@@ -693,7 +715,7 @@ $('save-form').addEventListener('click', async () => {
   }
 
   await loadAll();
-  $('form-panel').classList.remove('open');
+  closeSheets();
   clearForm();
   render();
 });
@@ -710,7 +732,7 @@ window.editTransaction = (id) => {
   $('venc-wrap').style.display = t.status==='pendente' ? 'block' : 'none';
   $('f-venc').value = t.dueDate || '';
   $('rec-wrap').style.display = 'none';
-  $('form-panel').classList.add('open');
+  openSheet('form-panel');
 };
 
 window.deleteTransaction = async (id) => {
@@ -741,10 +763,10 @@ window.markPago = async (id) => {
 };
 
 // ---------- SEARCH ----------
-$('toggle-search').addEventListener('click', () => { $('search-panel').classList.toggle('open'); $('form-panel').classList.remove('open'); });
+$('toggle-search').addEventListener('click', () => openSheet('search-panel'));
 $('s-apply').addEventListener('click', () => {
   activeFilters = {texto: $('s-texto').value.trim().toLowerCase(), categoria: $('s-categoria').value, conta: $('s-conta').value, mes: $('s-mes').value, ano: $('s-ano').value};
-  $('search-panel').classList.remove('open');
+  closeSheets();
   render();
 });
 $('s-clear').addEventListener('click', () => {
