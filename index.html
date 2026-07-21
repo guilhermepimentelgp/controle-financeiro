@@ -111,14 +111,13 @@
   .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.18);z-index:40;display:none;}
   .sheet-backdrop.open{display:block;}
   .panel{
-    position:fixed;left:0;right:0;bottom:0;z-index:50;max-width:640px;margin:0 auto;
-    background:var(--surface);border:1px solid var(--line);border-bottom:none;
-    border-top-left-radius:18px;border-top-right-radius:18px;
-    padding:.9rem 1.1rem calc(1.4rem + env(safe-area-inset-bottom));
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;
+    width:calc(100% - 48px);max-width:360px;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:1.1rem;
     max-height:80vh;overflow-y:auto;display:none;
-    box-shadow:0 -6px 20px rgba(0,0,0,.12);
+    box-shadow:0 8px 28px rgba(0,0,0,.16);
   }
-  .panel::before{content:'';display:block;width:36px;height:4px;background:var(--line);border-radius:3px;margin:0 auto .9rem;}
   .panel.open{display:block;}
   .panel h2{font-family:'Fraunces',serif;font-size:1rem;font-weight:600;margin:0 0 .9rem;}
   label{display:block;font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:.7rem 0 .3rem;}
@@ -256,12 +255,10 @@
   </div>
 
   <div id="tab-lancamentos" class="tab-page">
+    <button id="toggle-search" style="width:100%;text-align:left;padding:.6rem .8rem;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:.82rem;cursor:pointer;margin-bottom:1rem;">⌕ Buscar lançamento...</button>
+
     <div class="section-title" style="margin-top:.2rem;"><span id="lanc-title">Últimos lançamentos</span> <span class="count" id="lanc-count"></span></div>
     <div id="recent-container"></div>
-
-    <div class="actions-row" style="margin-top:1.2rem;">
-      <button class="search-btn" id="toggle-search" style="width:100%;">⌕ Buscar e filtrar</button>
-    </div>
 
     <div class="panel" id="search-panel">
       <h2>Buscar</h2>
