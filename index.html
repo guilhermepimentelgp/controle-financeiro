@@ -99,7 +99,7 @@
   }
   .cmp-row{font-size:.75rem;color:var(--ink-soft);margin-top:.5rem;}
   .cmp-row b{color:var(--ink);}
-  .mini-stats{display:flex;gap:.7rem;flex-wrap:wrap;}
+  .mini-stats{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.9rem;}
   .mini-stat{background:var(--surface-2);border-radius:9px;padding:.55rem .7rem;flex:1;min-width:90px;}
   .mini-stat .l{font-size:.65rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
   .mini-stat .v{font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:500;margin-top:.1rem;}
@@ -217,6 +217,11 @@
             <div class="saldo-valor" id="total-mes">R$ 0,00</div>
             <div class="cmp-row" id="cmp-mes"></div>
           </div>
+          <div class="month-nav">
+            <button id="prev-month">‹</button>
+            <div class="month-label" id="month-label">—</div>
+            <button id="next-month">›</button>
+          </div>
         </div>
         <div class="hero-page">
           <div class="hero-top">
@@ -228,11 +233,6 @@
         </div>
       </div>
       <div class="hero-dots" id="hero-dots"><span class="active"></span><span></span></div>
-      <div class="month-nav">
-        <button id="prev-month">‹</button>
-        <div class="month-label" id="month-label">—</div>
-        <button id="next-month">›</button>
-      </div>
       <div class="mini-stats" id="mini-stats-contas"></div>
     </div>
 
@@ -245,7 +245,7 @@
   </div>
 
   <div id="tab-lancamentos" class="tab-page">
-    <div class="section-title" style="margin-top:.2rem;">Últimos lançamentos</div>
+    <div class="section-title" style="margin-top:.2rem;"><span id="lanc-title">Últimos lançamentos</span> <span class="count" id="lanc-count"></span></div>
     <div id="recent-container"></div>
 
     <div class="actions-row" style="margin-top:1.2rem;">
@@ -268,9 +268,6 @@
         <button class="btn-save" id="s-apply">Filtrar</button>
       </div>
     </div>
-
-    <div class="section-title">Lançamentos <span class="count" id="lanc-count"></span></div>
-    <div id="ledger-container"></div>
 
     <button id="export-btn">Exportar lançamentos (CSV)</button>
   </div>
@@ -678,6 +675,7 @@ $('save-form').addEventListener('click', async () => {
     await col('transactions').doc(editingId).update({desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null});
   } else if(recOn){
     const recurringId = Date.now().toString(36);
+    const nowTs = Date.now();
     const batch = db.batch();
     for(let i=0;i<recN;i++){
       const d = new Date(dataStr+'T00:00:00');
@@ -686,12 +684,12 @@ $('save-form').addEventListener('click', async () => {
       batch.set(col('transactions').doc(), {
         desc, valor, categoryId, accountId, date:ds, status: i===0?formType_status:'pendente',
         dueDate: i===0 ? (formType_status==='pendente'?venc:null) : ds,
-        recurringId, seq:i+1, total:recN
+        recurringId, seq:i+1, total:recN, createdAt: nowTs + i
       });
     }
     await batch.commit();
   } else {
-    await col('transactions').add({desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null});
+    await col('transactions').add({desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: Date.now()});
   }
 
   await loadAll();
@@ -784,21 +782,6 @@ function monthTx(offset){
   const d = new Date(currentMonth); d.setMonth(d.getMonth()+offset);
   const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   return transactions.filter(t => mk(t.date) === key);
-}
-function filteredMonthTx(){
-  let list;
-  if(activeFilters.mes || activeFilters.ano){
-    const mm = activeFilters.mes || String(currentMonth.getMonth()+1);
-    const yy = activeFilters.ano || String(currentMonth.getFullYear());
-    const key = yy + '-' + String(mm).padStart(2,'0');
-    list = transactions.filter(t => mk(t.date) === key);
-  } else {
-    list = monthTx(0);
-  }
-  if(activeFilters.texto) list = list.filter(t => t.desc.toLowerCase().includes(activeFilters.texto));
-  if(activeFilters.categoria) list = list.filter(t => t.categoryId === activeFilters.categoria);
-  if(activeFilters.conta) list = list.filter(t => t.accountId === activeFilters.conta);
-  return list;
 }
 
 // ---------- FATURA (crédito) ----------
@@ -902,7 +885,6 @@ function render(){
   renderRanking(cur);
   renderCharts(cur, byAcc);
   renderEvolution();
-  renderLedger();
   renderRecent();
 }
 
@@ -975,14 +957,19 @@ function renderEvolution(){
   });
 }
 
+function sortKey(t){ return t.createdAt || new Date(t.date+'T00:00:00').getTime(); }
+
 function ledgerRowHTML(t){
   const dt = new Date(t.date+'T00:00:00');
+  const dateStr = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+  const timeStr = t.createdAt ? new Date(t.createdAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : null;
+  const meta = timeStr ? `${dateStr} · ${timeStr}` : `${dateStr} · ${escapeHtml(catName(t.categoryId))} · ${escapeHtml(accName(t.accountId))}`;
   const badge = t.status==='pendente' ? '<span class="badge badge-pendente">pendente</span>' : '';
   const recBadge = t.recurringId ? `<span class="badge badge-rec">${t.seq}/${t.total}</span>` : '';
   return `<div class="ledger-row">
     <div class="lr-cat">${catIcon(t.categoryId)}</div>
     <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
-      <div class="lr-meta">${dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} · ${escapeHtml(catName(t.categoryId))} · ${escapeHtml(accName(t.accountId))}</div></div>
+      <div class="lr-meta">${meta}</div></div>
     <div class="lr-val">${fmtBRL(t.valor)}</div>
     <div class="lr-menu-wrap">
       <button class="lr-menu-btn" onclick="toggleRowMenu(event,'${t.id}')" aria-label="Mais opções">⋮</button>
@@ -1003,18 +990,37 @@ window.toggleRowMenu = (e, id) => {
 window.closeRowMenus = () => { document.querySelectorAll('.lr-menu.open').forEach(m => m.classList.remove('open')); };
 document.addEventListener('click', closeRowMenus);
 
-function renderRecent(){
-  const list = [...transactions].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
-  const c = $('recent-container');
-  if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento ainda.</div>'; return; }
-  c.innerHTML = '<div class="ledger">' + list.map(ledgerRowHTML).join('') + '</div>';
+function hasActiveFilters(){
+  return !!(activeFilters.texto || activeFilters.categoria || activeFilters.conta || activeFilters.mes || activeFilters.ano);
 }
 
-function renderLedger(){
-  const list = filteredMonthTx().sort((a,b)=>b.date.localeCompare(a.date));
-  $('lanc-count').textContent = list.length ? list.length+' item'+(list.length>1?'s':'') : '';
-  const c = $('ledger-container');
-  if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento neste período.<br>Toque em "Novo gasto" para começar.</div>'; return; }
+function renderRecent(){
+  const c = $('recent-container');
+  let list;
+
+  if(hasActiveFilters()){
+    list = [...transactions];
+    if(activeFilters.texto) list = list.filter(t => t.desc.toLowerCase().includes(activeFilters.texto));
+    if(activeFilters.categoria) list = list.filter(t => t.categoryId === activeFilters.categoria);
+    if(activeFilters.conta) list = list.filter(t => t.accountId === activeFilters.conta);
+    if(activeFilters.mes || activeFilters.ano){
+      const mm = activeFilters.mes || '';
+      const yy = activeFilters.ano || '';
+      list = list.filter(t => {
+        const [ty, tm] = t.date.split('-');
+        return (!mm || parseInt(tm) === parseInt(mm)) && (!yy || ty === yy);
+      });
+    }
+    list.sort((a,b) => sortKey(b) - sortKey(a));
+    $('lanc-title').textContent = 'Resultados da busca';
+    $('lanc-count').textContent = list.length ? list.length+' item'+(list.length!==1?'s':'') : '';
+  } else {
+    list = [...transactions].sort((a,b) => sortKey(b) - sortKey(a)).slice(0,5);
+    $('lanc-title').textContent = 'Últimos lançamentos';
+    $('lanc-count').textContent = '';
+  }
+
+  if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento encontrado.</div>'; return; }
   c.innerHTML = '<div class="ledger">' + list.map(ledgerRowHTML).join('') + '</div>';
 }
 
