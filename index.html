@@ -154,9 +154,11 @@
   .dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
   .empty-chart{font-size:.8rem;color:var(--ink-soft);text-align:center;padding:2rem 0;}
 
-  .rank-list, .due-list, .ledger{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
-  .rank-row, .due-row, .ledger-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;border-bottom:1px solid var(--line);}
+  .rank-list, .due-list, .ledger{background:var(--surface);border:1px solid var(--line);border-radius:14px;}
+  .rank-row, .due-row, .ledger-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;border-bottom:1px solid var(--line);position:relative;}
   .rank-row:last-child, .due-row:last-child, .ledger-row:last-child{border-bottom:none;}
+  .rank-row:first-child, .due-row:first-child, .ledger-row:first-child{border-top-left-radius:13px;border-top-right-radius:13px;}
+  .rank-row:last-child, .due-row:last-child, .ledger-row:last-child{border-bottom-left-radius:13px;border-bottom-right-radius:13px;}
   .rank-pos{font-family:'IBM Plex Mono';font-size:.75rem;color:var(--ink-soft);width:16px;}
   .lr-cat{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:var(--despesa-bg);}
   .lr-mid{flex:1;min-width:0;}
