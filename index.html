@@ -155,12 +155,12 @@
   .empty-chart{font-size:.8rem;color:var(--ink-soft);text-align:center;padding:2rem 0;}
 
   .rank-list, .due-list, .ledger{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
-  .rank-row, .due-row, .ledger-row{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;border-bottom:1px solid var(--line);}
+  .rank-row, .due-row, .ledger-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;border-bottom:1px solid var(--line);}
   .rank-row:last-child, .due-row:last-child, .ledger-row:last-child{border-bottom:none;}
   .rank-pos{font-family:'IBM Plex Mono';font-size:.75rem;color:var(--ink-soft);width:16px;}
   .lr-cat{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:var(--despesa-bg);}
   .lr-mid{flex:1;min-width:0;}
-  .lr-desc{font-weight:500;font-size:.87rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lr-desc{font-weight:500;font-size:.87rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .lr-meta{font-size:.7rem;color:var(--ink-soft);margin-top:.1rem;}
   .lr-val{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:.9rem;text-align:right;flex-shrink:0;color:var(--despesa);}
   .lr-actions{display:flex;gap:2px;flex-shrink:0;}
@@ -184,6 +184,7 @@
   .lr-menu-wrap{position:relative;flex-shrink:0;}
   .lr-menu-btn{background:none;border:none;color:var(--ink-soft);font-size:1rem;cursor:pointer;padding:.2rem .4rem;}
   .lr-menu{display:none;position:absolute;right:0;top:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:15;min-width:100px;overflow:hidden;}
+  .lr-menu.up{top:auto;bottom:100%;}
   .lr-menu.open{display:block;}
   .lr-menu button{display:block;width:100%;text-align:left;padding:.55rem .8rem;background:none;border:none;font-size:.8rem;color:var(--ink);cursor:pointer;}
   .lr-menu button:hover{background:var(--surface-2);}
@@ -989,12 +990,14 @@ function ledgerRowHTML(t){
     <div class="lr-cat">${catIcon(t.categoryId)}</div>
     <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
       <div class="lr-meta">${meta}</div></div>
-    <div class="lr-val">${fmtBRL(t.valor)}</div>
-    <div class="lr-menu-wrap">
-      <button class="lr-menu-btn" onclick="toggleRowMenu(event,'${t.id}')" aria-label="Mais opções">⋮</button>
-      <div class="lr-menu" id="menu-${t.id}">
-        <button onclick="closeRowMenus();editTransaction('${t.id}')">Editar</button>
-        <button onclick="closeRowMenus();deleteTransaction('${t.id}')">Excluir</button>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">
+      <div class="lr-val">${fmtBRL(t.valor)}</div>
+      <div class="lr-menu-wrap">
+        <button class="lr-menu-btn" onclick="toggleRowMenu(event,'${t.id}')" aria-label="Mais opções">⋮</button>
+        <div class="lr-menu" id="menu-${t.id}">
+          <button onclick="closeRowMenus();editTransaction('${t.id}')">Editar</button>
+          <button onclick="closeRowMenus();deleteTransaction('${t.id}')">Excluir</button>
+        </div>
       </div>
     </div>
   </div>`;
@@ -1004,7 +1007,13 @@ window.toggleRowMenu = (e, id) => {
   const el = document.getElementById('menu-'+id);
   const wasOpen = el && el.classList.contains('open');
   closeRowMenus();
-  if(el && !wasOpen) el.classList.add('open');
+  if(el && !wasOpen){
+    el.classList.add('open');
+    const btnRect = e.currentTarget.getBoundingClientRect();
+    const menuHeight = 90; // altura aproximada do menu (2 opções)
+    const spaceBelow = window.innerHeight - btnRect.bottom;
+    el.classList.toggle('up', spaceBelow < menuHeight);
+  }
 };
 window.closeRowMenus = () => { document.querySelectorAll('.lr-menu.open').forEach(m => m.classList.remove('open')); };
 document.addEventListener('click', closeRowMenus);
