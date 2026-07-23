@@ -77,8 +77,8 @@
   .hero{margin-bottom:1rem;}
   .hero-track-wrap{overflow:hidden;border-radius:14px;touch-action:pan-y;}
   .hero-track{display:flex;width:200%;touch-action:pan-y;user-select:none;}
-  .hero-page{width:50%;box-sizing:border-box;}
-  .hero-card{background:var(--surface);border-radius:14px;padding:1.4rem 1.3rem 1.2rem 1.2rem;border-left:3px solid var(--despesa);}
+  .hero-page{width:50%;box-sizing:border-box;display:flex;}
+  .hero-card{background:var(--surface);border-radius:14px;padding:1.4rem 1.3rem 1.2rem 1.2rem;border-left:3px solid var(--despesa);flex:1;display:flex;flex-direction:column;justify-content:space-between;}
   .hero-card.fatura{border-left-color:var(--ink-soft);}
   .hero-dots{display:flex;justify-content:center;gap:5px;margin-top:.8rem;}
   .hero-dots span{height:5px;border-radius:3px;background:var(--line);}
@@ -95,6 +95,9 @@
   }
   .cmp-row{font-size:.75rem;color:var(--ink-soft);margin-top:.5rem;}
   .cmp-row b{color:var(--ink);}
+  .cmp-badge{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:.3rem .6rem;font-size:.72rem;font-weight:600;margin-top:.7rem;}
+  .cmp-badge.up{background:var(--despesa-bg);color:var(--despesa);}
+  .cmp-badge.down{background:var(--accent-bg);color:var(--accent);}
   .mini-stats{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.9rem;}
   .mini-stat{background:var(--surface-2);border-radius:9px;padding:.55rem .7rem;flex:1;min-width:90px;}
   .mini-stat .l{font-size:.65rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
@@ -226,12 +229,14 @@
               <div class="hero-top">
                 <div class="saldo-label">Total gasto no mês</div>
                 <div class="saldo-valor" id="total-mes">R$ 0,00</div>
-                <div class="cmp-row" id="cmp-mes"></div>
               </div>
-              <div class="month-nav">
-                <button id="prev-month">‹</button>
-                <div class="month-label" id="month-label">—</div>
-                <button id="next-month">›</button>
+              <div>
+                <div class="month-nav">
+                  <button id="prev-month">‹</button>
+                  <div class="month-label" id="month-label">—</div>
+                  <button id="next-month">›</button>
+                </div>
+                <div id="cmp-mes"></div>
               </div>
             </div>
           </div>
@@ -932,10 +937,11 @@ function render(){
 
   if(totalPrev > 0){
     const diff = ((totalCur-totalPrev)/totalPrev)*100;
-    const sign = diff >= 0 ? '+' : '';
-    $('cmp-mes').innerHTML = `<b>${sign}${diff.toFixed(0)}%</b> vs mês anterior (${fmtBRL(totalPrev)})`;
+    const arrow = diff >= 0 ? '▲' : '▼';
+    const cls = diff >= 0 ? 'up' : 'down';
+    $('cmp-mes').innerHTML = `<span class="cmp-badge ${cls}">${arrow} ${Math.abs(diff).toFixed(0)}% vs mês passado</span>`;
   } else {
-    $('cmp-mes').textContent = '';
+    $('cmp-mes').innerHTML = '';
   }
 
   const byAcc = {};
