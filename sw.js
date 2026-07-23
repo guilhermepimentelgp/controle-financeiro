@@ -1,4 +1,4 @@
-const CACHE_NAME = 'controle-financeiro-v1';
+const CACHE_NAME = 'controle-financeiro-v2';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
@@ -23,13 +23,13 @@ self.addEventListener('fetch', event => {
   if(url.origin !== self.location.origin){
     return;
   }
+  // Rede primeiro: sempre busca a versão mais nova quando há internet.
+  // Só usa a cópia salva localmente se estiver offline.
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const fetchPromise = fetch(event.request).then(res => {
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, res.clone()));
-        return res;
-      }).catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(event.request).then(res => {
+      const clone = res.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      return res;
+    }).catch(() => caches.match(event.request))
   );
 });
