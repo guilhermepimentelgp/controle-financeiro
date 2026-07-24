@@ -55,6 +55,12 @@
   .nav-btn.active{color:var(--accent);font-weight:600;}
   .hidden{display:none !important;}
 
+  @keyframes skelPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+  .skel{background:var(--surface-2);border-radius:14px;animation:skelPulse 1.3s ease-in-out infinite;}
+  .skel-hero{height:150px;margin-top:1rem;margin-bottom:1rem;}
+  .skel-btn{height:52px;border-radius:12px;margin-bottom:1.4rem;}
+  .skel-row{height:60px;margin-bottom:.7rem;}
+
   /* login / lock */
   .center-screen{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1.5rem;}
   .center-screen h1{font-family:'Manrope',sans-serif;font-size:1.4rem;margin:0 0 .4rem;}
@@ -257,6 +263,14 @@
   <h1>Controle Financeiro</h1>
   <p>Seus gastos, organizados e sincronizados entre seus aparelhos.</p>
   <button class="btn-google" id="google-login">Entrar com Google</button>
+</div>
+
+<div id="skeleton-screen" class="wrap hidden">
+  <div class="skel skel-hero"></div>
+  <div class="skel skel-btn"></div>
+  <div class="skel skel-row"></div>
+  <div class="skel skel-row"></div>
+  <div class="skel skel-row"></div>
 </div>
 
 <div id="lock-screen" class="center-screen hidden">
@@ -552,12 +566,14 @@ auth.onAuthStateChanged(async user => {
   if(!user){
     uid = null;
     $('login-screen').classList.remove('hidden');
+    $('skeleton-screen').classList.add('hidden');
     $('lock-screen').classList.add('hidden');
     $('app').classList.add('hidden');
     return;
   }
   uid = user.uid;
   $('login-screen').classList.add('hidden');
+  $('skeleton-screen').classList.remove('hidden');
   await loadSettings();
   await seedIfNeeded();
   await loadAll();
@@ -613,6 +629,7 @@ function sha256(text){
 }
 function showLock(mode){
   pinMode = mode; pinBuffer = '';
+  $('skeleton-screen').classList.add('hidden');
   $('lock-screen').classList.remove('hidden');
   $('app').classList.add('hidden');
   $('pin-err').textContent = '';
@@ -648,6 +665,7 @@ async function onPinKey(k){
 }
 
 function showApp(){
+  $('skeleton-screen').classList.add('hidden');
   $('lock-screen').classList.add('hidden');
   $('app').classList.remove('hidden');
   populateSelects();
@@ -687,7 +705,7 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
   const track = $('hero-track');
   const dot0 = $('dot0');
   const dot1 = $('dot1');
-  let page = 0, dragging = false, startX = 0, baseX = 0, w = 0;
+  let page = 0, dragging = false, decided = false, startX = 0, startY = 0, baseX = 0, w = 0, pid = null;
 
   function setDots(progress){
     dot0.style.width = (16 - progress*11) + 'px';
@@ -700,29 +718,45 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
     track.style.transform = 'translateX(' + px + 'px)';
     setDots(Math.min(1, Math.max(0, -px / w)));
   }
-  function onDown(x){
+  function onDown(e){
     w = wrap.getBoundingClientRect().width;
-    dragging = true; startX = x; baseX = -page*w;
-    track.style.transition = 'none';
+    pid = e.pointerId;
+    startX = e.clientX; startY = e.clientY; baseX = -page*w;
+    decided = false; dragging = false;
   }
-  function onMove(x){
+  function onMove(e){
+    if(e.pointerId !== pid) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if(!decided){
+      if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      decided = true;
+      if(Math.abs(dx) > Math.abs(dy)){
+        dragging = true;
+        track.style.transition = 'none';
+      } else {
+        dragging = false; // gesto vertical: deixa a página rolar
+      }
+    }
     if(!dragging) return;
-    let px = baseX + (x - startX);
+    let px = baseX + dx;
     px = Math.max(-w, Math.min(0, px));
     setPos(px, false);
   }
-  function onUp(x){
-    if(!dragging) return;
-    dragging = false;
-    const delta = x - startX;
-    if(delta < -40 && page === 0) page = 1;
-    else if(delta > 40 && page === 1) page = 0;
-    setPos(-page*w, true);
+  function onUp(e){
+    if(e.pointerId !== pid) return;
+    if(dragging){
+      const delta = e.clientX - startX;
+      if(delta < -40 && page === 0) page = 1;
+      else if(delta > 40 && page === 1) page = 0;
+      setPos(-page*w, true);
+    }
+    dragging = false; decided = false; pid = null;
   }
 
-  track.addEventListener('pointerdown', e => onDown(e.clientX));
-  window.addEventListener('pointermove', e => onMove(e.clientX));
-  window.addEventListener('pointerup', e => onUp(e.clientX));
+  track.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
   window.addEventListener('resize', () => { w = wrap.getBoundingClientRect().width; setPos(-page*w, false); });
 
   setDots(0);
@@ -748,20 +782,34 @@ $('save-closing-day').addEventListener('click', async () => {
 $('add-cat').addEventListener('click', async () => {
   const name = $('new-cat').value.trim();
   if(!name) return;
-  await col('categories').add({name, icon:'✳'});
+  const ref = col('categories').doc();
+  const data = {name, icon:'✳'};
+  await ref.set(data);
+  categories.push({id: ref.id, ...data});
   $('new-cat').value = '';
-  await loadAll(); populateSelects(); renderSettingsPanel(); render();
+  populateSelects(); renderSettingsPanel(); render();
 });
 $('add-acc').addEventListener('click', async () => {
   const name = $('new-acc').value.trim();
   const kind = $('new-acc-kind').value;
   if(!name) return;
-  await col('accounts').add({name, kind, icon:ACC_ICONS[kind]||'💳'});
+  const ref = col('accounts').doc();
+  const data = {name, kind, icon:ACC_ICONS[kind]||'💳'};
+  await ref.set(data);
+  accounts.push({id: ref.id, ...data});
   $('new-acc').value = '';
-  await loadAll(); populateSelects(); renderSettingsPanel(); render();
+  populateSelects(); renderSettingsPanel(); render();
 });
-window.deleteCategory = async id => { await col('categories').doc(id).delete(); await loadAll(); populateSelects(); renderSettingsPanel(); render(); };
-window.deleteAccount = async id => { await col('accounts').doc(id).delete(); await loadAll(); populateSelects(); renderSettingsPanel(); render(); };
+window.deleteCategory = async id => {
+  await col('categories').doc(id).delete();
+  categories = categories.filter(c => c.id !== id);
+  populateSelects(); renderSettingsPanel(); render();
+};
+window.deleteAccount = async id => {
+  await col('accounts').doc(id).delete();
+  accounts = accounts.filter(a => a.id !== id);
+  populateSelects(); renderSettingsPanel(); render();
+};
 
 $('pin-set').addEventListener('click', () => showLock('setup'));
 $('pin-remove').addEventListener('click', async () => {
@@ -824,28 +872,49 @@ $('save-form').addEventListener('click', async () => {
   if(formType_status === 'pendente' && !venc){ alert('Informe a data de vencimento.'); return; }
   if(recOn && (!recN || recN < 2)){ alert('Informe quantos meses (mínimo 2).'); return; }
 
-  if(editingId){
-    await col('transactions').doc(editingId).update({desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null});
-  } else if(recOn){
-    const recurringId = Date.now().toString(36);
-    const nowTs = Date.now();
-    const batch = db.batch();
-    for(let i=0;i<recN;i++){
-      const d = new Date(dataStr+'T00:00:00');
-      d.setMonth(d.getMonth()+i);
-      const ds = d.toISOString().slice(0,10);
-      batch.set(col('transactions').doc(), {
-        desc, valor, categoryId, accountId, date:ds, status: i===0?formType_status:'pendente',
-        dueDate: i===0 ? (formType_status==='pendente'?venc:null) : ds,
-        recurringId, seq:i+1, total:recN, createdAt: nowTs + i
-      });
+  const btn = $('save-form');
+  if(btn.disabled) return;
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Salvando...';
+
+  try{
+    if(editingId){
+      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null};
+      await col('transactions').doc(editingId).update(data);
+      const idx = transactions.findIndex(t => t.id === editingId);
+      if(idx > -1) transactions[idx] = {...transactions[idx], ...data};
+    } else if(recOn){
+      const recurringId = Date.now().toString(36);
+      const nowTs = Date.now();
+      const batch = db.batch();
+      const newOnes = [];
+      for(let i=0;i<recN;i++){
+        const d = new Date(dataStr+'T00:00:00');
+        d.setMonth(d.getMonth()+i);
+        const ds = d.toISOString().slice(0,10);
+        const ref = col('transactions').doc();
+        const data = {
+          desc, valor, categoryId, accountId, date:ds, status: i===0?formType_status:'pendente',
+          dueDate: i===0 ? (formType_status==='pendente'?venc:null) : ds,
+          recurringId, seq:i+1, total:recN, createdAt: nowTs + i
+        };
+        batch.set(ref, data);
+        newOnes.push({id: ref.id, ...data});
+      }
+      await batch.commit();
+      transactions.push(...newOnes);
+    } else {
+      const ref = col('transactions').doc();
+      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: Date.now()};
+      await ref.set(data);
+      transactions.push({id: ref.id, ...data});
     }
-    await batch.commit();
-  } else {
-    await col('transactions').add({desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: Date.now()});
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 
-  await loadAll();
   closeSheets();
   clearForm();
   render();
@@ -883,19 +952,21 @@ window.deleteTransaction = async (id) => {
     );
     if(choice === 'cancel') return;
     if(choice === 'future'){
-      const toDelete = transactions.filter(x => x.recurringId === t.recurringId && x.seq >= t.seq);
+      const toDeleteIds = transactions.filter(x => x.recurringId === t.recurringId && x.seq >= t.seq).map(x => x.id);
       const batch = db.batch();
-      toDelete.forEach(x => batch.delete(col('transactions').doc(x.id)));
+      toDeleteIds.forEach(tid => batch.delete(col('transactions').doc(tid)));
       await batch.commit();
+      transactions = transactions.filter(x => !toDeleteIds.includes(x.id));
     } else {
       await col('transactions').doc(id).delete();
+      transactions = transactions.filter(x => x.id !== id);
     }
   } else {
     const choice = await showConfirm('Excluir lançamento?', 'Essa ação não pode ser desfeita.');
     if(choice !== 'ok') return;
     await col('transactions').doc(id).delete();
+    transactions = transactions.filter(x => x.id !== id);
   }
-  await loadAll();
   render();
   vibrate(15);
   showToast('Lançamento excluído');
@@ -903,7 +974,8 @@ window.deleteTransaction = async (id) => {
 
 window.markPago = async (id) => {
   await col('transactions').doc(id).update({status:'pago', dueDate:null});
-  await loadAll();
+  const t = transactions.find(x => x.id === id);
+  if(t){ t.status = 'pago'; t.dueDate = null; }
   render();
   vibrate(15);
   showToast('Marcado como pago');
@@ -1098,16 +1170,25 @@ function renderDonut(canvasId, legendId, obj, existing){
   const canvas = $(canvasId); const legendEl = $(legendId);
   const labels = Object.keys(obj); const values = Object.values(obj);
   const total = values.reduce((a,b)=>a+b,0);
-  if(existing) existing.destroy();
-  if(labels.length===0){ legendEl.innerHTML = '<div class="empty-chart" style="width:100%;">Sem dados neste mês.</div>'; return null; }
+  if(labels.length===0){
+    if(existing) existing.destroy();
+    legendEl.innerHTML = '<div class="empty-chart" style="width:100%;">Sem dados neste mês.</div>';
+    return null;
+  }
   const colors = labels.map((_,i)=>CHART_COLORS[i%CHART_COLORS.length]);
-  const chart = new Chart(canvas, {
+  legendEl.innerHTML = labels.map((l,i)=>{const pct = total>0?Math.round((values[i]/total)*100):0; return `<span><span class="dot" style="background:${colors[i]}"></span>${escapeHtml(l)} ${pct}%</span>`;}).join('');
+  if(existing){
+    existing.data.labels = labels;
+    existing.data.datasets[0].data = values;
+    existing.data.datasets[0].backgroundColor = colors;
+    existing.update();
+    return existing;
+  }
+  return new Chart(canvas, {
     type:'doughnut',
     data:{labels, datasets:[{data:values, backgroundColor:colors, borderWidth:2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface')}]},
-    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtBRL(ctx.raw)}}}, cutout:'65%'}
+    options:{responsive:true, maintainAspectRatio:false, animation:{duration:400}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtBRL(ctx.raw)}}}, cutout:'65%'}
   });
-  legendEl.innerHTML = labels.map((l,i)=>{const pct = total>0?Math.round((values[i]/total)*100):0; return `<span><span class="dot" style="background:${colors[i]}"></span>${escapeHtml(l)} ${pct}%</span>`;}).join('');
-  return chart;
 }
 
 function renderEvolution(){
@@ -1118,11 +1199,16 @@ function renderEvolution(){
     labels.push(d.toLocaleDateString('pt-BR',{month:'short'}));
     values.push(transactions.filter(t=>mk(t.date)===key).reduce((s,t)=>s+t.valor,0));
   }
-  if(chartEvol) chartEvol.destroy();
+  if(chartEvol){
+    chartEvol.data.labels = labels;
+    chartEvol.data.datasets[0].data = values;
+    chartEvol.update();
+    return;
+  }
   chartEvol = new Chart($('chart-evol'), {
     type:'bar',
     data:{labels, datasets:[{data:values, backgroundColor:'#A3432B', borderRadius:4, maxBarThickness:28}]},
-    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>fmtBRL(ctx.raw)}}},
+    options:{responsive:true, maintainAspectRatio:false, animation:{duration:400}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>fmtBRL(ctx.raw)}}},
       scales:{y:{ticks:{callback:v=>fmtBRL(v)}, grid:{color:'#00000010'}}, x:{grid:{display:false}}}}
   });
 }
@@ -1187,26 +1273,43 @@ window.closeAllSwipes = () => {
 function initSwipeRows(containerSelector){
   const maxReveal = -128;
   document.querySelectorAll((containerSelector||'#recent-container') + ' .ledger-row').forEach(row => {
-    let dragging = false, startX = 0, baseX = 0;
+    let startX = 0, startY = 0, baseX = 0, decided = false, dragging = false, pid = null;
+
     row.addEventListener('pointerdown', e => {
-      row.setPointerCapture(e.pointerId);
-      dragging = true; startX = e.clientX; baseX = row.dataset.swiped === '1' ? maxReveal : 0;
-      row.style.transition = 'none';
+      pid = e.pointerId;
+      startX = e.clientX; startY = e.clientY;
+      baseX = row.dataset.swiped === '1' ? maxReveal : 0;
+      decided = false; dragging = false;
     });
     row.addEventListener('pointermove', e => {
+      if(e.pointerId !== pid) return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if(!decided){
+        if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return; // aguarda intenção clara
+        decided = true;
+        if(Math.abs(dx) > Math.abs(dy)){
+          dragging = true;
+          row.setPointerCapture(pid);
+          row.style.transition = 'none';
+        } else {
+          dragging = false; // gesto vertical: deixa a página rolar normalmente
+        }
+      }
       if(!dragging) return;
-      let px = baseX + (e.clientX - startX);
+      let px = baseX + dx;
       px = Math.max(maxReveal, Math.min(0, px));
       row.style.transform = 'translateX(' + px + 'px)';
     });
     function endDrag(e){
-      if(!dragging) return;
-      dragging = false;
-      const dx = e.clientX - startX;
-      const shouldOpen = (baseX === 0 && dx < -30) || (baseX === maxReveal && dx < 30);
-      row.dataset.swiped = shouldOpen ? '1' : '0';
-      row.style.transition = 'transform .25s cubic-bezier(.22,1.2,.36,1)';
-      row.style.transform = 'translateX(' + (shouldOpen ? maxReveal : 0) + 'px)';
+      if(e.pointerId !== pid) return;
+      if(dragging){
+        const dx = e.clientX - startX;
+        const shouldOpen = (baseX === 0 && dx < -30) || (baseX === maxReveal && dx < 30);
+        row.dataset.swiped = shouldOpen ? '1' : '0';
+        row.style.transition = 'transform .25s cubic-bezier(.22,1.2,.36,1)';
+        row.style.transform = 'translateX(' + (shouldOpen ? maxReveal : 0) + 'px)';
+      }
+      dragging = false; decided = false; pid = null;
     }
     row.addEventListener('pointerup', endDrag);
     row.addEventListener('pointercancel', endDrag);
