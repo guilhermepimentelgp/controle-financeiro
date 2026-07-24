@@ -132,6 +132,9 @@
   .status-toggle button.active[data-s="pendente"]{background:var(--pendente-bg);border-color:var(--pendente);color:var(--pendente);}
   .status-toggle button.active[data-s="pago"]{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
   .save-row{display:flex;gap:.6rem;margin-top:1.1rem;}
+  .confirm-btn{width:100%;padding:.7rem;border-radius:9px;font-family:'Manrope',sans-serif;font-weight:700;font-size:.86rem;cursor:pointer;border:1px solid var(--line);background:none;color:var(--ink-soft);}
+  .confirm-btn.danger{background:var(--despesa);border-color:var(--despesa);color:var(--surface);}
+  .confirm-btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
   .save-row button{padding:.7rem;border-radius:9px;font-family:'Inter';font-weight:500;font-size:.86rem;cursor:pointer;}
   .btn-cancel{flex:1;background:none;border:1px solid var(--line);color:var(--ink-soft);}
   .btn-save{flex:2;background:var(--ink);border:1px solid var(--ink);color:var(--bg);}
@@ -194,8 +197,7 @@
 
   .lr-menu-wrap{position:relative;flex-shrink:0;}
   .lr-menu-btn{background:none;border:none;color:var(--ink-soft);font-size:1rem;cursor:pointer;padding:.2rem .4rem;}
-  .lr-menu{display:none;position:absolute;right:0;top:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:15;min-width:100px;overflow:hidden;}
-  .lr-menu.up{top:auto;bottom:100%;}
+  .lr-menu{display:none;position:fixed;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:100;min-width:100px;overflow:hidden;}
   .lr-menu.open{display:block;}
   .lr-menu button{display:block;width:100%;text-align:left;padding:.55rem .8rem;background:none;border:none;font-size:.8rem;color:var(--ink);cursor:pointer;}
   .lr-menu button:hover{background:var(--surface-2);}
@@ -213,6 +215,40 @@
     transition:opacity .25s,transform .25s;z-index:60;white-space:nowrap;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  #extrato-screen{
+    position:fixed;inset:0;z-index:80;background:var(--bg);display:none;
+    flex-direction:column;padding:1.25rem 1.1rem;padding-top:calc(1.25rem + env(safe-area-inset-top));
+  }
+  #extrato-screen.open{display:flex;}
+  .extrato-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+  .extrato-title{font-family:'Manrope',sans-serif;font-size:1.05rem;font-weight:700;color:var(--ink);}
+  #close-extrato{background:var(--surface-2);border:none;border-radius:8px;width:30px;height:30px;font-size:.9rem;color:var(--ink);cursor:pointer;}
+  #extrato-busca{width:100%;padding:.6rem .8rem;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:'Manrope',sans-serif;font-size:.85rem;margin-bottom:.6rem;}
+  .extrato-count{font-size:.72rem;color:var(--ink-soft);margin-bottom:.6rem;}
+  #extrato-list{flex:1;overflow-y:auto;}
+
+  .confirm-modal{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:90;
+    width:calc(100% - 64px);max-width:320px;background:var(--surface);border-radius:16px;
+    padding:1.3rem;display:none;box-shadow:0 8px 28px rgba(0,0,0,.18);
+  }
+  .confirm-modal.open{display:block;}
+  .confirm-title{font-family:'Manrope',sans-serif;font-size:1rem;font-weight:700;color:var(--ink);}
+  .confirm-desc{font-size:.8rem;color:var(--ink-soft);margin-top:.35rem;}
+
+  .save-toast{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);z-index:90;
+    background:var(--surface);border-radius:16px;padding:1.5rem 1.8rem;text-align:center;
+    box-shadow:0 8px 28px rgba(0,0,0,.18);opacity:0;pointer-events:none;
+    transition:opacity .22s,transform .22s;
+  }
+  .save-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  .save-toast-check{
+    width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent);
+    font-size:1.1rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto .6rem;
+  }
+  #save-toast-msg{font-family:'Manrope',sans-serif;font-size:.85rem;font-weight:700;color:var(--ink);white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -249,7 +285,10 @@
           <div class="hero-page">
             <div class="hero-card total">
               <div class="hero-top">
-                <div class="saldo-label">Total gasto no mês</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div class="saldo-label">Total gasto no mês</div>
+                  <button id="open-extrato" style="background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;padding:0;">Ver extrato <span style="font-size:.8rem;">›</span></button>
+                </div>
                 <div class="saldo-valor" id="total-mes">R$ 0,00</div>
               </div>
               <div>
@@ -414,6 +453,28 @@
     <div class="save-row">
       <button class="btn-cancel" id="close-fatura-panel" style="flex:1;">Fechar</button>
     </div>
+  </div>
+
+  <div id="extrato-screen">
+    <div class="extrato-header">
+      <div class="extrato-title">Extrato completo</div>
+      <button id="close-extrato" aria-label="Fechar">✕</button>
+    </div>
+    <input id="extrato-busca" type="text" placeholder="Buscar por descrição...">
+    <div id="extrato-count" class="extrato-count"></div>
+    <div id="extrato-list"></div>
+  </div>
+
+  <div class="sheet-backdrop" id="confirm-backdrop"></div>
+  <div class="confirm-modal" id="confirm-modal">
+    <div class="confirm-title" id="confirm-title">Excluir lançamento?</div>
+    <div class="confirm-desc" id="confirm-desc">Essa ação não pode ser desfeita.</div>
+    <div class="save-row" id="confirm-buttons" style="flex-direction:column;"></div>
+  </div>
+
+  <div class="save-toast" id="save-toast">
+    <div class="save-toast-check">✓</div>
+    <div id="save-toast-msg">Gasto salvo</div>
   </div>
 
   <div class="bottom-nav">
@@ -811,8 +872,17 @@ window.deleteTransaction = async (id) => {
   const t = transactions.find(x => x.id === id);
   if(!t) return;
   if(t.recurringId){
-    const choice = confirm('Este lançamento faz parte de uma recorrência.\nOK = excluir este e os futuros\nCancelar = excluir só este');
-    if(choice){
+    const choice = await showConfirm(
+      'Lançamento recorrente',
+      `Este gasto faz parte de uma recorrência (${t.seq}/${t.total}). O que você quer excluir?`,
+      [
+        {key:'cancel', label:'Cancelar', cls:''},
+        {key:'this', label:'Excluir só este', cls:'primary'},
+        {key:'future', label:'Excluir este e os futuros', cls:'danger'}
+      ]
+    );
+    if(choice === 'cancel') return;
+    if(choice === 'future'){
       const toDelete = transactions.filter(x => x.recurringId === t.recurringId && x.seq >= t.seq);
       const batch = db.batch();
       toDelete.forEach(x => batch.delete(col('transactions').doc(x.id)));
@@ -821,7 +891,8 @@ window.deleteTransaction = async (id) => {
       await col('transactions').doc(id).delete();
     }
   } else {
-    if(!confirm('Excluir este lançamento?')) return;
+    const choice = await showConfirm('Excluir lançamento?', 'Essa ação não pode ser desfeita.');
+    if(choice !== 'ok') return;
     await col('transactions').doc(id).delete();
   }
   await loadAll();
@@ -1094,11 +1165,12 @@ window.toggleRowMenu = (e, id) => {
   const wasOpen = el && el.classList.contains('open');
   closeRowMenus();
   if(el && !wasOpen){
-    el.classList.add('open');
     const btnRect = e.currentTarget.getBoundingClientRect();
-    const menuHeight = 90; // altura aproximada do menu (2 opções)
-    const spaceBelow = window.innerHeight - btnRect.bottom;
-    el.classList.toggle('up', spaceBelow < menuHeight);
+    const menuWidth = 100, menuHeight = 90;
+    const openUp = (window.innerHeight - btnRect.bottom) < menuHeight;
+    el.style.left = Math.min(btnRect.right - menuWidth, window.innerWidth - menuWidth - 8) + 'px';
+    el.style.top = openUp ? (btnRect.top - menuHeight) + 'px' : (btnRect.bottom + 4) + 'px';
+    el.classList.add('open');
   }
 };
 window.closeRowMenus = () => { document.querySelectorAll('.lr-menu.open').forEach(m => m.classList.remove('open')); };
@@ -1112,9 +1184,9 @@ window.closeAllSwipes = () => {
     row.style.transform = 'translateX(0)';
   });
 };
-function initSwipeRows(){
+function initSwipeRows(containerSelector){
   const maxReveal = -128;
-  document.querySelectorAll('#recent-container .ledger-row').forEach(row => {
+  document.querySelectorAll((containerSelector||'#recent-container') + ' .ledger-row').forEach(row => {
     let dragging = false, startX = 0, baseX = 0;
     row.addEventListener('pointerdown', e => {
       row.setPointerCapture(e.pointerId);
@@ -1141,20 +1213,60 @@ function initSwipeRows(){
   });
 }
 
-// ---------- FEEDBACK (toast + vibração) ----------
+// ---------- FEEDBACK (toast central + vibração) ----------
 function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
 function showToast(msg){
-  let t = document.getElementById('app-toast');
-  if(!t){
-    t = document.createElement('div');
-    t.id = 'app-toast';
-    t.className = 'toast';
-    document.body.appendChild(t);
-  }
-  t.innerHTML = '<span style="font-weight:800;">✓</span> ' + msg;
+  const t = $('save-toast');
+  $('save-toast-msg').textContent = msg;
   t.classList.add('show');
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+// ---------- CONFIRMAÇÃO CUSTOMIZADA (substitui o confirm() nativo) ----------
+function showConfirm(title, desc, buttons){
+  buttons = buttons || [
+    {key:'cancel', label:'Cancelar', cls:''},
+    {key:'ok', label:'Excluir', cls:'danger'}
+  ];
+  return new Promise(resolve => {
+    $('confirm-title').textContent = title;
+    $('confirm-desc').textContent = desc;
+    const row = $('confirm-buttons');
+    row.innerHTML = buttons.map(b => `<button class="confirm-btn ${b.cls}" data-key="${b.key}">${b.label}</button>`).join('');
+    $('confirm-modal').classList.add('open');
+    $('confirm-backdrop').classList.add('open');
+    function cleanup(key){
+      $('confirm-modal').classList.remove('open');
+      $('confirm-backdrop').classList.remove('open');
+      row.querySelectorAll('button').forEach(b => b.removeEventListener('click', onClick));
+      $('confirm-backdrop').removeEventListener('click', onBackdrop);
+      resolve(key);
+    }
+    function onClick(e){ cleanup(e.currentTarget.dataset.key); }
+    function onBackdrop(){ cleanup('cancel'); }
+    row.querySelectorAll('button').forEach(b => b.addEventListener('click', onClick));
+    $('confirm-backdrop').addEventListener('click', onBackdrop);
+  });
+}
+
+// ---------- EXTRATO COMPLETO ----------
+let extratoBusca = '';
+$('open-extrato').addEventListener('click', () => {
+  $('extrato-screen').classList.add('open');
+  renderExtrato();
+});
+$('close-extrato').addEventListener('click', () => $('extrato-screen').classList.remove('open'));
+$('extrato-busca').addEventListener('input', e => { extratoBusca = e.target.value.trim().toLowerCase(); renderExtrato(); });
+
+function renderExtrato(){
+  let list = [...transactions].sort((a,b) => sortKey(b) - sortKey(a));
+  if(extratoBusca) list = list.filter(t => t.desc.toLowerCase().includes(extratoBusca));
+  $('extrato-count').textContent = list.length + ' lançamento' + (list.length!==1?'s':'') + ' no total';
+  const c = $('extrato-list');
+  if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento encontrado.</div>'; return; }
+  c.innerHTML = '<div class="ledger">' + list.map(ledgerRowHTML).join('') + '</div>';
+  initSwipeRows("#extrato-list");
 }
 
 function hasActiveFilters(){
