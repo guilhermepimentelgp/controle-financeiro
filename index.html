@@ -434,6 +434,10 @@
       <div><label>Valor (R$)</label><input id="f-valor" type="number" step="0.01" min="0" placeholder="0,00"></div>
       <div><label>Data</label><input id="f-data" type="date"></div>
     </div>
+    <div id="f-time-wrap" style="display:none;">
+      <label>Horário do gasto</label>
+      <input id="f-time" type="time">
+    </div>
     <div class="row2">
       <div><label>Categoria</label><select id="f-categoria"></select></div>
       <div><label>Conta</label><select id="f-conta"></select></div>
@@ -840,6 +844,7 @@ $('toggle-form').addEventListener('click', () => {
   $('form-title').textContent = 'Novo gasto';
   clearForm();
   $('f-data').value = new Date().toISOString().slice(0,10);
+  updateTimeFieldVisibility();
   openSheet('form-panel');
 });
 $('cancel-form').addEventListener('click', () => { closeSheets(); clearForm(); });
@@ -850,12 +855,22 @@ document.querySelectorAll('.status-toggle button').forEach(b => b.addEventListen
 }));
 $('f-rec-on').addEventListener('change', e => { $('rec-n-wrap').style.display = e.target.checked ? 'block' : 'none'; });
 
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function nowTimeStr(){ return new Date().toTimeString().slice(0,5); }
+function updateTimeFieldVisibility(){
+  const isToday = $('f-data').value === todayStr();
+  $('f-time-wrap').style.display = isToday ? 'none' : 'block';
+  if(!isToday && !$('f-time').value) $('f-time').value = nowTimeStr();
+}
+$('f-data').addEventListener('change', updateTimeFieldVisibility);
+
 function clearForm(){
-  $('f-desc').value=''; $('f-valor').value=''; $('f-venc').value=''; $('f-rec-n').value='';
+  $('f-desc').value=''; $('f-valor').value=''; $('f-venc').value=''; $('f-rec-n').value=''; $('f-time').value='';
   $('f-rec-on').checked = false; $('rec-n-wrap').style.display='none';
   formType_status = 'pago';
   document.querySelectorAll('.status-toggle button').forEach(x => x.classList.toggle('active', x.dataset.s==='pago'));
   $('venc-wrap').style.display = 'none';
+  $('f-time-wrap').style.display = 'none';
 }
 
 $('save-form').addEventListener('click', async () => {
@@ -878,9 +893,15 @@ $('save-form').addEventListener('click', async () => {
   const originalLabel = btn.textContent;
   btn.textContent = 'Salvando...';
 
+  function computeCreatedAt(){
+    if(dataStr === todayStr()) return Date.now();
+    const timeVal = $('f-time').value || '12:00';
+    return new Date(dataStr + 'T' + timeVal + ':00').getTime();
+  }
+
   try{
     if(editingId){
-      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null};
+      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: computeCreatedAt()};
       await col('transactions').doc(editingId).update(data);
       const idx = transactions.findIndex(t => t.id === editingId);
       if(idx > -1) transactions[idx] = {...transactions[idx], ...data};
@@ -897,7 +918,7 @@ $('save-form').addEventListener('click', async () => {
         const data = {
           desc, valor, categoryId, accountId, date:ds, status: i===0?formType_status:'pendente',
           dueDate: i===0 ? (formType_status==='pendente'?venc:null) : ds,
-          recurringId, seq:i+1, total:recN, createdAt: nowTs + i
+          recurringId, seq:i+1, total:recN, createdAt: i===0 ? computeCreatedAt() : nowTs + i
         };
         batch.set(ref, data);
         newOnes.push({id: ref.id, ...data});
@@ -906,7 +927,7 @@ $('save-form').addEventListener('click', async () => {
       transactions.push(...newOnes);
     } else {
       const ref = col('transactions').doc();
-      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: Date.now()};
+      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: computeCreatedAt()};
       await ref.set(data);
       transactions.push({id: ref.id, ...data});
     }
@@ -934,6 +955,8 @@ window.editTransaction = (id) => {
   $('venc-wrap').style.display = t.status==='pendente' ? 'block' : 'none';
   $('f-venc').value = t.dueDate || '';
   $('rec-wrap').style.display = 'none';
+  $('f-time').value = t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '';
+  updateTimeFieldVisibility();
   openSheet('form-panel');
 };
 
@@ -1251,6 +1274,7 @@ window.toggleRowMenu = (e, id) => {
   const wasOpen = el && el.classList.contains('open');
   closeRowMenus();
   if(el && !wasOpen){
+    document.body.appendChild(el); // escapa de qualquer ancestral com transform/overflow
     const btnRect = e.currentTarget.getBoundingClientRect();
     const menuWidth = 100, menuHeight = 90;
     const openUp = (window.innerHeight - btnRect.bottom) < menuHeight;
