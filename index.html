@@ -858,9 +858,8 @@ $('f-rec-on').addEventListener('change', e => { $('rec-n-wrap').style.display = 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function nowTimeStr(){ return new Date().toTimeString().slice(0,5); }
 function updateTimeFieldVisibility(){
-  const isToday = $('f-data').value === todayStr();
-  $('f-time-wrap').style.display = isToday ? 'none' : 'block';
-  if(!isToday && !$('f-time').value) $('f-time').value = nowTimeStr();
+  $('f-time-wrap').style.display = 'block';
+  if(!$('f-time').value) $('f-time').value = nowTimeStr();
 }
 $('f-data').addEventListener('change', updateTimeFieldVisibility);
 
@@ -894,8 +893,7 @@ $('save-form').addEventListener('click', async () => {
   btn.textContent = 'Salvando...';
 
   function computeCreatedAt(){
-    if(dataStr === todayStr()) return Date.now();
-    const timeVal = $('f-time').value || '12:00';
+    const timeVal = $('f-time').value || nowTimeStr();
     return new Date(dataStr + 'T' + timeVal + ':00').getTime();
   }
 
