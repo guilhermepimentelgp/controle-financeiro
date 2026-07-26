@@ -233,6 +233,10 @@
   #extrato-busca{width:100%;padding:.6rem .8rem;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:'Manrope',sans-serif;font-size:.85rem;margin-bottom:.6rem;}
   .extrato-count{font-size:.72rem;color:var(--ink-soft);margin-bottom:.6rem;}
   #extrato-list{flex:1;overflow-y:auto;}
+  .extrato-day-group{margin-bottom:1rem;}
+  .extrato-day-header{display:flex;justify-content:space-between;align-items:center;padding:0 .2rem .4rem;}
+  .extrato-day-header span:first-child{font-family:'Manrope',sans-serif;font-size:.78rem;font-weight:700;color:var(--ink);text-transform:capitalize;}
+  .extrato-day-total{font-family:'Manrope',sans-serif;font-size:.75rem;color:var(--ink-soft);}
 
   .confirm-modal{
     position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:90;
@@ -334,9 +338,6 @@
     <div class="actions-row">
       <button class="add-btn" id="toggle-form">+ Novo gasto</button>
     </div>
-
-    <div class="section-title">Contas a vencer</div>
-    <div id="due-container"></div>
   </div>
 
   <div id="tab-lancamentos" class="tab-page">
@@ -442,15 +443,6 @@
       <div><label>Categoria</label><select id="f-categoria"></select></div>
       <div><label>Conta</label><select id="f-conta"></select></div>
     </div>
-    <label>Status</label>
-    <div class="status-toggle">
-      <button type="button" class="active" data-s="pago">Pago</button>
-      <button type="button" data-s="pendente">Pendente</button>
-    </div>
-    <div id="venc-wrap" style="display:none;">
-      <label>Vencimento</label>
-      <input id="f-venc" type="date">
-    </div>
     <div class="checkline" id="rec-wrap">
       <input type="checkbox" id="f-rec-on">
       <label style="margin:0;text-transform:none;font-size:.85rem;">Repetir todo mês por um número definido de meses</label>
@@ -536,7 +528,6 @@ let accounts = [];
 let transactions = [];
 let settings = {theme:'light', pinHash:null};
 let currentMonth = new Date();
-let formType_status = 'pago';
 let pinBuffer = '';
 let pinMode = 'unlock'; // 'unlock' | 'setup'
 let activeFilters = {texto:'', categoria:'', conta:'', mes:'', ano:''};
@@ -848,11 +839,6 @@ $('toggle-form').addEventListener('click', () => {
   openSheet('form-panel');
 });
 $('cancel-form').addEventListener('click', () => { closeSheets(); clearForm(); });
-document.querySelectorAll('.status-toggle button').forEach(b => b.addEventListener('click', () => {
-  formType_status = b.dataset.s;
-  document.querySelectorAll('.status-toggle button').forEach(x => x.classList.toggle('active', x===b));
-  $('venc-wrap').style.display = formType_status === 'pendente' ? 'block' : 'none';
-}));
 $('f-rec-on').addEventListener('change', e => { $('rec-n-wrap').style.display = e.target.checked ? 'block' : 'none'; });
 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -864,11 +850,8 @@ function updateTimeFieldVisibility(){
 $('f-data').addEventListener('change', updateTimeFieldVisibility);
 
 function clearForm(){
-  $('f-desc').value=''; $('f-valor').value=''; $('f-venc').value=''; $('f-rec-n').value=''; $('f-time').value='';
+  $('f-desc').value=''; $('f-valor').value=''; $('f-rec-n').value=''; $('f-time').value='';
   $('f-rec-on').checked = false; $('rec-n-wrap').style.display='none';
-  formType_status = 'pago';
-  document.querySelectorAll('.status-toggle button').forEach(x => x.classList.toggle('active', x.dataset.s==='pago'));
-  $('venc-wrap').style.display = 'none';
   $('f-time-wrap').style.display = 'none';
 }
 
@@ -878,12 +861,10 @@ $('save-form').addEventListener('click', async () => {
   const dataStr = $('f-data').value;
   const categoryId = $('f-categoria').value;
   const accountId = $('f-conta').value;
-  const venc = $('f-venc').value;
   const recOn = $('f-rec-on').checked;
   const recN = parseInt($('f-rec-n').value);
 
   if(!desc || !valor || valor <= 0 || !dataStr){ alert('Preencha descrição, valor e data.'); return; }
-  if(formType_status === 'pendente' && !venc){ alert('Informe a data de vencimento.'); return; }
   if(recOn && (!recN || recN < 2)){ alert('Informe quantos meses (mínimo 2).'); return; }
 
   const btn = $('save-form');
@@ -899,7 +880,7 @@ $('save-form').addEventListener('click', async () => {
 
   try{
     if(editingId){
-      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: computeCreatedAt()};
+      const data = {desc, valor, categoryId, accountId, date:dataStr, createdAt: computeCreatedAt()};
       await col('transactions').doc(editingId).update(data);
       const idx = transactions.findIndex(t => t.id === editingId);
       if(idx > -1) transactions[idx] = {...transactions[idx], ...data};
@@ -914,8 +895,7 @@ $('save-form').addEventListener('click', async () => {
         const ds = d.toISOString().slice(0,10);
         const ref = col('transactions').doc();
         const data = {
-          desc, valor, categoryId, accountId, date:ds, status: i===0?formType_status:'pendente',
-          dueDate: i===0 ? (formType_status==='pendente'?venc:null) : ds,
+          desc, valor, categoryId, accountId, date:ds,
           recurringId, seq:i+1, total:recN, createdAt: i===0 ? computeCreatedAt() : nowTs + i
         };
         batch.set(ref, data);
@@ -925,7 +905,7 @@ $('save-form').addEventListener('click', async () => {
       transactions.push(...newOnes);
     } else {
       const ref = col('transactions').doc();
-      const data = {desc, valor, categoryId, accountId, date:dataStr, status:formType_status, dueDate: formType_status==='pendente'?venc:null, createdAt: computeCreatedAt()};
+      const data = {desc, valor, categoryId, accountId, date:dataStr, createdAt: computeCreatedAt()};
       await ref.set(data);
       transactions.push({id: ref.id, ...data});
     }
@@ -948,10 +928,6 @@ window.editTransaction = (id) => {
   $('form-title').textContent = 'Editar gasto';
   $('f-desc').value = t.desc; $('f-valor').value = t.valor; $('f-data').value = t.date;
   $('f-categoria').value = t.categoryId; $('f-conta').value = t.accountId;
-  formType_status = t.status;
-  document.querySelectorAll('.status-toggle button').forEach(x => x.classList.toggle('active', x.dataset.s===t.status));
-  $('venc-wrap').style.display = t.status==='pendente' ? 'block' : 'none';
-  $('f-venc').value = t.dueDate || '';
   $('rec-wrap').style.display = 'none';
   $('f-time').value = t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '';
   updateTimeFieldVisibility();
@@ -991,15 +967,6 @@ window.deleteTransaction = async (id) => {
   render();
   vibrate(15);
   showToast('Lançamento excluído');
-};
-
-window.markPago = async (id) => {
-  await col('transactions').doc(id).update({status:'pago', dueDate:null});
-  const t = transactions.find(x => x.id === id);
-  if(t){ t.status = 'pago'; t.dueDate = null; }
-  render();
-  vibrate(15);
-  showToast('Marcado como pago');
 };
 
 // ---------- SEARCH ----------
@@ -1155,25 +1122,11 @@ function render(){
     `<div class="mini-stat"><div class="l">${a.icon||''} ${escapeHtml(a.name)}</div><div class="v">${fmtBRL(byAcc[a.id])}</div></div>`
   ).join('') || '<div class="mini-stat"><div class="l">Sem gastos ainda</div></div>';
 
-  renderDue();
   renderFatura();
   renderRanking(cur);
   renderCharts(cur, byAcc);
   renderEvolution();
   renderRecent();
-}
-
-function renderDue(){
-  const pend = transactions.filter(t => t.status==='pendente').sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
-  const c = $('due-container');
-  if(pend.length===0){ c.innerHTML = '<div class="empty-state">Nenhuma conta pendente.</div>'; return; }
-  c.innerHTML = '<div class="due-list">' + pend.map(t => {
-    const dt = new Date(t.dueDate+'T00:00:00');
-    return `<div class="due-row">
-      <div><div class="lr-desc">${escapeHtml(t.desc)}</div><div class="lr-meta">vence em ${dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}${t.recurringId?` · ${t.seq}/${t.total}`:''}</div></div>
-      <div style="text-align:right;"><div class="lr-val">${fmtBRL(t.valor)}</div><button class="mark-pago" onclick="markPago('${t.id}')">marcar pago</button></div>
-    </div>`;
-  }).join('') + '</div>';
 }
 
 function renderRanking(cur){
@@ -1402,7 +1355,27 @@ function renderExtrato(){
   $('extrato-count').textContent = list.length + ' lançamento' + (list.length!==1?'s':'') + ' no total';
   const c = $('extrato-list');
   if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento encontrado.</div>'; return; }
-  c.innerHTML = '<div class="ledger">' + list.map(ledgerRowHTML).join('') + '</div>';
+
+  const groups = [];
+  let lastDate = null;
+  list.forEach(t => {
+    if(t.date !== lastDate){
+      groups.push({date: t.date, items: []});
+      lastDate = t.date;
+    }
+    groups[groups.length-1].items.push(t);
+  });
+
+  c.innerHTML = groups.map(g => {
+    const d = new Date(g.date+'T00:00:00');
+    const label = d.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'});
+    const labelCap = label.charAt(0).toUpperCase() + label.slice(1);
+    const total = g.items.reduce((s,t)=>s+t.valor,0);
+    return `<div class="extrato-day-group">
+      <div class="extrato-day-header"><span>${labelCap}</span><span class="extrato-day-total">${fmtBRL(total)}</span></div>
+      <div class="ledger">${g.items.map(ledgerRowHTML).join('')}</div>
+    </div>`;
+  }).join('');
   initSwipeRows("#extrato-list");
 }
 
