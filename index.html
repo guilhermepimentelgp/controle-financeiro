@@ -259,6 +259,11 @@
     font-size:1.1rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto .6rem;
   }
   #save-toast-msg{font-family:'Manrope',sans-serif;font-size:.85rem;font-weight:700;color:var(--ink);white-space:nowrap;}
+
+  .auth-tab{border:none;background:none;border-radius:7px;padding:.5rem 0;font-family:'Manrope',sans-serif;font-size:.78rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .auth-tab.active{background:var(--ink);color:var(--bg);}
+  #login-screen label{margin-top:.7rem;}
+  #login-screen input{width:100%;}
 </style>
 </head>
 <body>
@@ -266,7 +271,30 @@
 <div id="login-screen" class="center-screen">
   <h1>Controle Financeiro</h1>
   <p>Seus gastos, organizados e sincronizados entre seus aparelhos.</p>
-  <button class="btn-google" id="google-login">Entrar com Google</button>
+
+  <div style="width:100%;max-width:300px;">
+    <button class="btn-google" id="google-login" style="width:100%;justify-content:center;">Continuar com Google</button>
+
+    <div style="display:flex;align-items:center;gap:10px;margin:1.2rem 0;">
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+      <span style="font-size:.7rem;color:var(--ink-soft);">ou</span>
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+    </div>
+
+    <div style="display:flex;background:var(--surface-2);border-radius:9px;padding:3px;margin-bottom:1rem;">
+      <button type="button" class="auth-tab active" id="tab-login" data-mode="login" style="flex:1;">Entrar</button>
+      <button type="button" class="auth-tab" id="tab-signup" data-mode="signup" style="flex:1;">Criar conta</button>
+    </div>
+
+    <label style="text-align:left;">E-mail</label>
+    <input id="auth-email" type="email" placeholder="seuemail@exemplo.com">
+    <label style="text-align:left;">Senha</label>
+    <input id="auth-senha" type="password" placeholder="••••••••">
+
+    <div id="auth-err" style="color:var(--despesa);font-size:.75rem;margin-top:.5rem;min-height:1rem;"></div>
+
+    <button id="auth-submit" class="btn-cancel" style="width:100%;background:var(--ink);color:var(--bg);border:none;font-weight:700;margin-top:.8rem;padding:.7rem;border-radius:9px;cursor:pointer;">Entrar</button>
+  </div>
 </div>
 
 <div id="skeleton-screen" class="wrap hidden">
@@ -347,7 +375,10 @@
     <div id="recent-container"></div>
 
     <div class="panel" id="search-panel">
-      <h2>Buscar</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
+        <h2 style="margin:0;">Buscar</h2>
+        <button id="close-search" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
+      </div>
       <input id="s-texto" type="text" placeholder="Descrição...">
       <div class="row2">
         <div><label>Categoria</label><select id="s-categoria"><option value="">Todas</option></select></div>
@@ -432,7 +463,7 @@
     <label>Descrição</label>
     <input id="f-desc" type="text" placeholder="Ex: Mercado do mês">
     <div class="row2">
-      <div><label>Valor (R$)</label><input id="f-valor" type="number" step="0.01" min="0" placeholder="0,00"></div>
+      <div><label>Valor (R$)</label><input id="f-valor" type="text" inputmode="numeric" placeholder="0,00"></div>
       <div><label>Data</label><input id="f-data" type="date"></div>
     </div>
     <div id="f-time-wrap" style="display:none;">
@@ -556,6 +587,50 @@ $('google-login').addEventListener('click', () => {
   auth.signInWithPopup(provider).catch(e => alert('Erro ao entrar: ' + e.message));
 });
 $('logout-btn').addEventListener('click', () => auth.signOut());
+
+let authMode = 'login';
+function setAuthMode(mode){
+  authMode = mode;
+  $('tab-login').classList.toggle('active', mode==='login');
+  $('tab-signup').classList.toggle('active', mode==='signup');
+  $('auth-submit').textContent = mode==='login' ? 'Entrar' : 'Criar conta';
+  $('auth-err').textContent = '';
+}
+$('tab-login').addEventListener('click', () => setAuthMode('login'));
+$('tab-signup').addEventListener('click', () => setAuthMode('signup'));
+
+const AUTH_ERR_MSG = {
+  'auth/invalid-email': 'E-mail inválido.',
+  'auth/user-not-found': 'Não encontramos uma conta com esse e-mail.',
+  'auth/wrong-password': 'Senha incorreta.',
+  'auth/email-already-in-use': 'Já existe uma conta com esse e-mail. Toque em "Entrar".',
+  'auth/weak-password': 'Escolha uma senha com pelo menos 6 caracteres.',
+  'auth/invalid-credential': 'E-mail ou senha incorretos.',
+  'auth/operation-not-allowed': 'Login por e-mail e senha ainda não foi ativado no Firebase.'
+};
+$('auth-submit').addEventListener('click', async () => {
+  const email = $('auth-email').value.trim();
+  const senha = $('auth-senha').value;
+  $('auth-err').textContent = '';
+  if(!email || !senha){ $('auth-err').textContent = 'Preencha e-mail e senha.'; return; }
+
+  const btn = $('auth-submit');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = authMode==='login' ? 'Entrando...' : 'Criando conta...';
+  try{
+    if(authMode === 'login'){
+      await auth.signInWithEmailAndPassword(email, senha);
+    } else {
+      await auth.createUserWithEmailAndPassword(email, senha);
+    }
+  } catch(e){
+    $('auth-err').textContent = AUTH_ERR_MSG[e.code] || ('Erro: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+});
 
 auth.onAuthStateChanged(async user => {
   if(!user){
@@ -849,6 +924,23 @@ function updateTimeFieldVisibility(){
 }
 $('f-data').addEventListener('change', updateTimeFieldVisibility);
 
+// ---------- CAMPO DE VALOR SEM VÍRGULA ----------
+function formatValorInput(el){
+  let digits = el.value.replace(/\D/g,'');
+  if(!digits){ el.value = ''; return; }
+  digits = digits.replace(/^0+/,'') || '0';
+  while(digits.length < 3) digits = '0' + digits;
+  const cents = digits.slice(-2);
+  const intPart = digits.slice(0,-2).replace(/^0+(?=\d)/,'');
+  const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  el.value = withThousands + ',' + cents;
+}
+function parseValorInput(str){
+  if(!str) return NaN;
+  return parseFloat(str.replace(/\./g,'').replace(',', '.'));
+}
+$('f-valor').addEventListener('input', () => formatValorInput($('f-valor')));
+
 function clearForm(){
   $('f-desc').value=''; $('f-valor').value=''; $('f-rec-n').value=''; $('f-time').value='';
   $('f-rec-on').checked = false; $('rec-n-wrap').style.display='none';
@@ -857,7 +949,7 @@ function clearForm(){
 
 $('save-form').addEventListener('click', async () => {
   const desc = $('f-desc').value.trim();
-  const valor = parseFloat($('f-valor').value);
+  const valor = parseValorInput($('f-valor').value);
   const dataStr = $('f-data').value;
   const categoryId = $('f-categoria').value;
   const accountId = $('f-conta').value;
@@ -926,7 +1018,7 @@ window.editTransaction = (id) => {
   if(!t) return;
   editingId = id;
   $('form-title').textContent = 'Editar gasto';
-  $('f-desc').value = t.desc; $('f-valor').value = t.valor; $('f-data').value = t.date;
+  $('f-desc').value = t.desc; $('f-valor').value = t.valor.toFixed(2).replace('.',','); $('f-data').value = t.date;
   $('f-categoria').value = t.categoryId; $('f-conta').value = t.accountId;
   $('rec-wrap').style.display = 'none';
   $('f-time').value = t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '';
@@ -971,6 +1063,7 @@ window.deleteTransaction = async (id) => {
 
 // ---------- SEARCH ----------
 $('toggle-search').addEventListener('click', () => openSheet('search-panel'));
+$('close-search').addEventListener('click', closeSheets);
 $('s-apply').addEventListener('click', () => {
   activeFilters = {texto: $('s-texto').value.trim().toLowerCase(), categoria: $('s-categoria').value, conta: $('s-conta').value, mes: $('s-mes').value, ano: $('s-ano').value};
   closeSheets();
