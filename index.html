@@ -139,10 +139,10 @@
     border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);padding:.5rem 1rem;cursor:pointer;
   }
   .pill-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
-  .picker-item{display:flex;align-items:center;justify-content:space-between;padding:.8rem .3rem;border-bottom:1px solid var(--line);font-family:'Manrope',sans-serif;font-size:.9rem;color:var(--ink);cursor:pointer;}
-  .picker-item:last-child{border-bottom:none;}
-  .picker-item.selected{color:var(--accent);font-weight:700;}
-  .picker-check{color:var(--accent);font-weight:800;font-size:.9rem;}
+  .picker-item{display:flex;align-items:center;justify-content:space-between;padding:.8rem .8rem;border-radius:11px;margin-bottom:.3rem;font-family:'Manrope',sans-serif;font-size:.88rem;font-weight:600;color:var(--ink);cursor:pointer;}
+  .picker-item:last-child{margin-bottom:0;}
+  .picker-item.selected{background:var(--ink);color:var(--bg);font-weight:800;}
+  .picker-check{color:var(--bg);font-weight:800;font-size:.9rem;}
   input:focus,select:focus{outline:1px solid var(--ink);}
   .row2{display:flex;gap:.6rem;}
   .row2 > div{flex:1;}
@@ -493,6 +493,10 @@
     <div class="row2">
       <div><label>Categoria</label><select id="f-categoria"></select></div>
       <div><label>Conta</label><select id="f-conta"></select></div>
+    </div>
+    <div id="pagamento-wrap" style="display:none;">
+      <label>Dia de pagamento (opcional)</label>
+      <input id="f-pagamento" type="date">
     </div>
     <div class="checkline" id="rec-wrap">
       <input type="checkbox" id="f-rec-on">
@@ -976,6 +980,7 @@ $('toggle-form').addEventListener('click', () => {
   clearForm();
   $('f-data').value = localDateStr();
   updateTimeFieldVisibility();
+  updatePagamentoVisibility();
   openSheet('form-panel');
 });
 $('cancel-form').addEventListener('click', () => { closeSheets(); clearForm(); });
@@ -988,6 +993,12 @@ function updateTimeFieldVisibility(){
   if(!$('f-time').value) $('f-time').value = nowTimeStr();
 }
 $('f-data').addEventListener('change', updateTimeFieldVisibility);
+
+function updatePagamentoVisibility(){
+  const acc = accounts.find(a => a.id === $('f-conta').value);
+  $('pagamento-wrap').style.display = (acc && acc.kind === 'credito') ? 'block' : 'none';
+}
+$('f-conta').addEventListener('change', updatePagamentoVisibility);
 
 // ---------- CAMPO DE VALOR SEM VÍRGULA ----------
 function formatValorInput(el){
@@ -1007,9 +1018,10 @@ function parseValorInput(str){
 $('f-valor').addEventListener('input', () => formatValorInput($('f-valor')));
 
 function clearForm(){
-  $('f-desc').value=''; $('f-valor').value=''; $('f-rec-n').value=''; $('f-time').value='';
+  $('f-desc').value=''; $('f-valor').value=''; $('f-rec-n').value=''; $('f-time').value=''; $('f-pagamento').value='';
   $('f-rec-on').checked = false; $('rec-n-wrap').style.display='none';
   $('f-time-wrap').style.display = 'none';
+  $('pagamento-wrap').style.display = 'none';
 }
 
 $('save-form').addEventListener('click', async () => {
@@ -1018,6 +1030,7 @@ $('save-form').addEventListener('click', async () => {
   const dataStr = $('f-data').value;
   const categoryId = $('f-categoria').value;
   const accountId = $('f-conta').value;
+  const paymentDate = $('f-pagamento').value || null;
   const recOn = $('f-rec-on').checked;
   const recN = parseInt($('f-rec-n').value);
 
@@ -1037,7 +1050,7 @@ $('save-form').addEventListener('click', async () => {
 
   try{
     if(editingId){
-      const data = {desc, valor, categoryId, accountId, date:dataStr, createdAt: computeCreatedAt()};
+      const data = {desc, valor, categoryId, accountId, date:dataStr, paymentDate, createdAt: computeCreatedAt()};
       await col('transactions').doc(editingId).update(data);
       const idx = transactions.findIndex(t => t.id === editingId);
       if(idx > -1) transactions[idx] = {...transactions[idx], ...data};
@@ -1052,7 +1065,7 @@ $('save-form').addEventListener('click', async () => {
         const ds = localDateStr(d);
         const ref = col('transactions').doc();
         const data = {
-          desc, valor, categoryId, accountId, date:ds,
+          desc, valor, categoryId, accountId, date:ds, paymentDate: i===0 ? paymentDate : null,
           recurringId, seq:i+1, total:recN, createdAt: i===0 ? computeCreatedAt() : nowTs + i
         };
         batch.set(ref, data);
@@ -1062,7 +1075,7 @@ $('save-form').addEventListener('click', async () => {
       transactions.push(...newOnes);
     } else {
       const ref = col('transactions').doc();
-      const data = {desc, valor, categoryId, accountId, date:dataStr, createdAt: computeCreatedAt()};
+      const data = {desc, valor, categoryId, accountId, date:dataStr, paymentDate, createdAt: computeCreatedAt()};
       await ref.set(data);
       transactions.push({id: ref.id, ...data});
     }
@@ -1087,7 +1100,9 @@ window.editTransaction = (id) => {
   $('f-categoria').value = t.categoryId; $('f-conta').value = t.accountId;
   $('rec-wrap').style.display = 'none';
   $('f-time').value = t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '';
+  $('f-pagamento').value = t.paymentDate || '';
   updateTimeFieldVisibility();
+  updatePagamentoVisibility();
   openSheet('form-panel');
 };
 
@@ -1202,7 +1217,8 @@ function invoiceClosingDate(key, closingDay){
 }
 function creditoTransactions(){
   const creditoIds = new Set(accounts.filter(a => a.kind === 'credito').map(a => a.id));
-  return transactions.filter(t => creditoIds.has(t.accountId));
+  const today = localDateStr();
+  return transactions.filter(t => creditoIds.has(t.accountId) && !(t.paymentDate && t.paymentDate <= today));
 }
 function renderFatura(){
   const closingDay = settings.closingDay || 30;
