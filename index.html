@@ -192,7 +192,7 @@
   .ledger .lr-swipe-wrap:first-child{border-top-left-radius:13px;border-top-right-radius:13px;}
   .ledger .lr-swipe-wrap:last-child{border-bottom-left-radius:13px;border-bottom-right-radius:13px;}
   .lr-actions-behind{position:absolute;top:0;right:0;bottom:0;display:flex;}
-  .lr-actions-behind button{width:64px;border:none;color:var(--surface);font-size:.72rem;font-weight:600;cursor:pointer;}
+  .lr-actions-behind button{width:64px;border:none;color:var(--surface);font-size:.72rem;font-weight:600;cursor:pointer;touch-action:manipulation;}
   .lr-actions-behind .edit{background:var(--ink-soft);}
   .lr-actions-behind .del{background:var(--despesa);}
   .ledger-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;position:relative;z-index:1;background:var(--surface);touch-action:pan-y;}
@@ -1508,16 +1508,6 @@ window.toggleRowMenu = (e, id) => {
   }
 };
 window.closeRowMenus = () => { document.querySelectorAll('.lr-menu.open').forEach(m => m.classList.remove('open')); };
-
-// Depois de um gesto de arrastar (pointerdown->move->up), o navegador ainda dispara um
-// "click" sintético ao soltar o dedo, mesmo sem o usuário ter tocado de novo. Sem essa
-// supressão, esse clique fantasma borbulhava até o listener abaixo e fechava a gaveta
-// (Editar/Excluir) no mesmo instante em que ela era revelada pelo arraste — por isso era
-// preciso tocar duas vezes nos botões. suppressNextClick descarta só esse único clique.
-let suppressNextClick = false;
-document.addEventListener('click', e => {
-  if(suppressNextClick){ suppressNextClick = false; e.stopPropagation(); e.preventDefault(); return; }
-}, true);
 document.addEventListener('click', () => { closeRowMenus(); closeAllSwipes(); });
 
 // ---------- ARRASTAR PRA EDITAR/EXCLUIR ----------
@@ -1566,9 +1556,6 @@ function initSwipeRows(containerSelector){
         row.dataset.swiped = shouldOpen ? '1' : '0';
         row.style.transition = 'transform .25s cubic-bezier(.22,1.2,.36,1)';
         row.style.transform = 'translateX(' + (shouldOpen ? maxReveal : 0) + 'px)';
-        // Houve arraste de verdade: o próximo "click" que o navegador disparar é o
-        // clique fantasma do próprio gesto, não um toque real do usuário — descarta.
-        suppressNextClick = true;
       }
       dragging = false; decided = false; pid = null;
     }
