@@ -125,6 +125,7 @@
     box-shadow:0 8px 28px rgba(0,0,0,.16);
   }
   .panel.open{display:block;}
+  #picker-panel{z-index:96;}
   .panel h2{font-family:'Manrope',sans-serif;font-size:1rem;font-weight:600;margin:0 0 .9rem;}
   label{display:block;font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:.7rem 0 .3rem;}
   input,select{width:100%;padding:.6rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:'Inter';font-size:.9rem;}
@@ -610,9 +611,30 @@ function closeSheets(){
   document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
   $('sheet-backdrop').classList.remove('open');
 }
-$('sheet-backdrop').addEventListener('click', closeSheets);
+// Fecha tudo, exceto quando o seletor (picker-panel) está empilhado sobre outra caixa:
+// nesse caso, um toque no fundo escurecido só fecha o seletor, mantendo a caixa de trás aberta.
+$('sheet-backdrop').addEventListener('click', () => {
+  if($('picker-panel').classList.contains('open')){
+    closePickerOverlay();
+  } else {
+    closeSheets();
+  }
+});
 
 // ---------- SELETOR CUSTOMIZADO (substitui o <select> nativo) ----------
+// Diferente de openSheet(), este NÃO fecha a caixa que já estiver aberta por trás —
+// ele empilha o seletor por cima dela, e closePickerOverlay() remove só essa camada.
+function openPickerOverlay(){
+  $('picker-panel').classList.add('open');
+  $('sheet-backdrop').classList.add('open');
+}
+function closePickerOverlay(){
+  $('picker-panel').classList.remove('open');
+  // Se não sobrou nenhuma outra caixa aberta por trás, esconde o fundo escurecido também
+  if(!document.querySelector('.panel.open')){
+    $('sheet-backdrop').classList.remove('open');
+  }
+}
 function openPicker(btnId, title, options, onSelect){
   const btn = $(btnId);
   const currentValue = btn.dataset.value;
@@ -629,13 +651,13 @@ function openPicker(btnId, title, options, onSelect){
       const value = el.dataset.value, label = el.dataset.label, icon = el.dataset.icon;
       btn.dataset.value = value;
       btn.innerHTML = (icon ? `<span class="picker-icon">${icon}</span>` : '') + `<span>${label}</span>`;
-      closeSheets();
+      closePickerOverlay();
       onSelect(value);
     });
   });
-  openSheet('picker-panel');
+  openPickerOverlay();
 }
-$('picker-close').addEventListener('click', closeSheets);
+$('picker-close').addEventListener('click', closePickerOverlay);
 
 const fmtBRL = v => (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 function localDateStr(d){
@@ -1486,6 +1508,16 @@ window.toggleRowMenu = (e, id) => {
   }
 };
 window.closeRowMenus = () => { document.querySelectorAll('.lr-menu.open').forEach(m => m.classList.remove('open')); };
+
+// Depois de um gesto de arrastar (pointerdown->move->up), o navegador ainda dispara um
+// "click" sintético ao soltar o dedo, mesmo sem o usuário ter tocado de novo. Sem essa
+// supressão, esse clique fantasma borbulhava até o listener abaixo e fechava a gaveta
+// (Editar/Excluir) no mesmo instante em que ela era revelada pelo arraste — por isso era
+// preciso tocar duas vezes nos botões. suppressNextClick descarta só esse único clique.
+let suppressNextClick = false;
+document.addEventListener('click', e => {
+  if(suppressNextClick){ suppressNextClick = false; e.stopPropagation(); e.preventDefault(); return; }
+}, true);
 document.addEventListener('click', () => { closeRowMenus(); closeAllSwipes(); });
 
 // ---------- ARRASTAR PRA EDITAR/EXCLUIR ----------
@@ -1534,6 +1566,9 @@ function initSwipeRows(containerSelector){
         row.dataset.swiped = shouldOpen ? '1' : '0';
         row.style.transition = 'transform .25s cubic-bezier(.22,1.2,.36,1)';
         row.style.transform = 'translateX(' + (shouldOpen ? maxReveal : 0) + 'px)';
+        // Houve arraste de verdade: o próximo "click" que o navegador disparar é o
+        // clique fantasma do próprio gesto, não um toque real do usuário — descarta.
+        suppressNextClick = true;
       }
       dragging = false; decided = false; pid = null;
     }
