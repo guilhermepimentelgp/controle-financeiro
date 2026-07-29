@@ -114,10 +114,10 @@
   .add-btn{flex:1;padding:.85rem;border-radius:12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-family:'Inter';font-weight:500;font-size:.88rem;cursor:pointer;}
   .search-btn{width:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:1rem;cursor:pointer;}
 
-  .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.32);z-index:40;display:none;}
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.32);z-index:85;display:none;}
   .sheet-backdrop.open{display:block;}
   .panel{
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:95;
     width:calc(100% - 48px);max-width:360px;
     background:var(--surface);border:1px solid var(--line);border-radius:16px;
     padding:1.1rem;
@@ -143,6 +143,8 @@
   .picker-item:last-child{margin-bottom:0;}
   .picker-item.selected{background:var(--ink);color:var(--bg);font-weight:800;}
   .picker-check{color:var(--bg);font-weight:800;font-size:.9rem;}
+  .picker-icon{margin-right:.5rem;font-size:1rem;}
+  .field-btn .picker-icon{margin-right:.4rem;}
   input:focus,select:focus{outline:1px solid var(--ink);}
   .row2{display:flex;gap:.6rem;}
   .row2 > div{flex:1;}
@@ -254,7 +256,7 @@
   .extrato-day-total{font-family:'Manrope',sans-serif;font-size:.75rem;color:var(--ink-soft);}
 
   .confirm-modal{
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:90;
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:96;
     width:calc(100% - 64px);max-width:320px;background:var(--surface);border-radius:16px;
     padding:1.3rem;display:none;box-shadow:0 8px 28px rgba(0,0,0,.18);
   }
@@ -263,7 +265,7 @@
   .confirm-desc{font-size:.8rem;color:var(--ink-soft);margin-top:.35rem;}
 
   .save-toast{
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);z-index:90;
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);z-index:97;
     background:var(--surface);border-radius:16px;padding:1.5rem 1.8rem;text-align:center;
     box-shadow:0 8px 28px rgba(0,0,0,.18);opacity:0;pointer-events:none;
     transition:opacity .22s,transform .22s;
@@ -396,8 +398,8 @@
       </div>
       <input id="s-texto" type="text" placeholder="Descrição...">
       <div class="row2">
-        <div><label>Categoria</label><select id="s-categoria"><option value="">Todas</option></select></div>
-        <div><label>Conta</label><select id="s-conta"><option value="">Todas</option></select></div>
+        <div><label>Categoria</label><button type="button" class="field-btn" id="s-categoria" data-value="">Todas</button></div>
+        <div><label>Conta</label><button type="button" class="field-btn" id="s-conta" data-value="">Todas</button></div>
       </div>
       <div class="row2">
         <div><label>Mês</label><button type="button" class="field-btn" id="s-mes" data-value="">Todos</button></div>
@@ -491,8 +493,8 @@
       <input id="f-time" type="time">
     </div>
     <div class="row2">
-      <div><label>Categoria</label><select id="f-categoria"></select></div>
-      <div><label>Conta</label><select id="f-conta"></select></div>
+      <div><label>Categoria</label><button type="button" class="field-btn" id="f-categoria" data-value=""></button></div>
+      <div><label>Conta</label><button type="button" class="field-btn" id="f-conta" data-value=""></button></div>
     </div>
     <div id="pagamento-wrap" style="display:none;">
       <label>Dia de pagamento (opcional)</label>
@@ -617,15 +619,16 @@ function openPicker(btnId, title, options, onSelect){
   $('picker-title').textContent = title;
   $('picker-list').innerHTML = options.map(o => {
     const isSel = String(o.value) === String(currentValue);
-    return `<div class="picker-item ${isSel?'selected':''}" data-value="${o.value}" data-label="${o.label}">
-      <span>${o.label}</span>${isSel ? '<span class="picker-check">✓</span>' : ''}
+    const iconHtml = o.icon ? `<span class="picker-icon">${o.icon}</span>` : '';
+    return `<div class="picker-item ${isSel?'selected':''}" data-value="${o.value}" data-label="${o.label}" data-icon="${o.icon||''}">
+      <span style="display:flex;align-items:center;">${iconHtml}${o.label}</span>${isSel ? '<span class="picker-check">✓</span>' : ''}
     </div>`;
   }).join('');
   $('picker-list').querySelectorAll('.picker-item').forEach(el => {
     el.addEventListener('click', () => {
-      const value = el.dataset.value, label = el.dataset.label;
+      const value = el.dataset.value, label = el.dataset.label, icon = el.dataset.icon;
       btn.dataset.value = value;
-      btn.textContent = label;
+      btn.innerHTML = (icon ? `<span class="picker-icon">${icon}</span>` : '') + `<span>${label}</span>`;
       closeSheets();
       onSelect(value);
     });
@@ -956,12 +959,26 @@ $('pin-remove').addEventListener('click', async () => {
 
 // ---------- SELECTS ----------
 function populateSelects(){
-  const catOpts = categories.map(c => `<option value="${c.id}">${c.icon||''} ${escapeHtml(c.name)}</option>`).join('');
-  const accOpts = accounts.map(a => `<option value="${a.id}">${a.icon||''} ${escapeHtml(a.name)}</option>`).join('');
-  $('f-categoria').innerHTML = catOpts;
-  $('f-conta').innerHTML = accOpts;
-  $('s-categoria').innerHTML = '<option value="">Todas</option>' + catOpts;
-  $('s-conta').innerHTML = '<option value="">Todas</option>' + accOpts;
+  const catOptions = categories.map(c => ({value:c.id, label:c.name, icon:c.icon||'✳'}));
+  const accOptions = accounts.map(a => ({value:a.id, label:a.name, icon:a.icon||'💳'}));
+
+  // Categoria/Conta do formulário de novo gasto (sempre um valor selecionado)
+  if(categories.length){
+    $('f-categoria').dataset.value = categories[0].id;
+    $('f-categoria').innerHTML = `<span class="picker-icon">${categories[0].icon||'✳'}</span><span>${escapeHtml(categories[0].name)}</span>`;
+  }
+  if(accounts.length){
+    $('f-conta').dataset.value = accounts[0].id;
+    $('f-conta').innerHTML = `<span class="picker-icon">${accounts[0].icon||'💳'}</span><span>${escapeHtml(accounts[0].name)}</span>`;
+  }
+  $('f-categoria').onclick = () => openPicker('f-categoria', 'Categoria', catOptions, () => {});
+  $('f-conta').onclick = () => openPicker('f-conta', 'Conta', accOptions, () => { updatePagamentoVisibility(); });
+
+  // Categoria/Conta do filtro de busca (opção "Todas" por padrão)
+  const catOptionsAll = [{value:'', label:'Todas', icon:''}].concat(catOptions);
+  const accOptionsAll = [{value:'', label:'Todas', icon:''}].concat(accOptions);
+  $('s-categoria').onclick = () => openPicker('s-categoria', 'Categoria', catOptionsAll, () => {});
+  $('s-conta').onclick = () => openPicker('s-conta', 'Conta', accOptionsAll, () => {});
 
   const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const nowY = new Date().getFullYear();
@@ -995,10 +1012,9 @@ function updateTimeFieldVisibility(){
 $('f-data').addEventListener('change', updateTimeFieldVisibility);
 
 function updatePagamentoVisibility(){
-  const acc = accounts.find(a => a.id === $('f-conta').value);
+  const acc = accounts.find(a => a.id === $('f-conta').dataset.value);
   $('pagamento-wrap').style.display = (acc && acc.kind === 'credito') ? 'block' : 'none';
 }
-$('f-conta').addEventListener('change', updatePagamentoVisibility);
 
 // ---------- CAMPO DE VALOR SEM VÍRGULA ----------
 function formatValorInput(el){
@@ -1028,8 +1044,8 @@ $('save-form').addEventListener('click', async () => {
   const desc = $('f-desc').value.trim();
   const valor = parseValorInput($('f-valor').value);
   const dataStr = $('f-data').value;
-  const categoryId = $('f-categoria').value;
-  const accountId = $('f-conta').value;
+  const categoryId = $('f-categoria').dataset.value;
+  const accountId = $('f-conta').dataset.value;
   const paymentDate = $('f-pagamento').value || null;
   const recOn = $('f-rec-on').checked;
   const recN = parseInt($('f-rec-n').value);
@@ -1097,7 +1113,12 @@ window.editTransaction = (id) => {
   editingId = id;
   $('form-title').textContent = 'Editar gasto';
   $('f-desc').value = t.desc; $('f-valor').value = t.valor.toFixed(2).replace('.',','); $('f-data').value = t.date;
-  $('f-categoria').value = t.categoryId; $('f-conta').value = t.accountId;
+  const editCat = categories.find(c => c.id === t.categoryId);
+  const editAcc = accounts.find(a => a.id === t.accountId);
+  $('f-categoria').dataset.value = t.categoryId;
+  $('f-categoria').innerHTML = editCat ? `<span class="picker-icon">${editCat.icon||'✳'}</span><span>${escapeHtml(editCat.name)}</span>` : '';
+  $('f-conta').dataset.value = t.accountId;
+  $('f-conta').innerHTML = editAcc ? `<span class="picker-icon">${editAcc.icon||'💳'}</span><span>${escapeHtml(editAcc.name)}</span>` : '';
   $('rec-wrap').style.display = 'none';
   $('f-time').value = t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '';
   $('f-pagamento').value = t.paymentDate || '';
@@ -1145,13 +1166,15 @@ window.deleteTransaction = async (id) => {
 $('toggle-search').addEventListener('click', () => openSheet('search-panel'));
 $('close-search').addEventListener('click', closeSheets);
 $('s-apply').addEventListener('click', () => {
-  activeFilters = {texto: $('s-texto').value.trim().toLowerCase(), categoria: $('s-categoria').value, conta: $('s-conta').value, mes: $('s-mes').dataset.value, ano: $('s-ano').dataset.value};
+  activeFilters = {texto: $('s-texto').value.trim().toLowerCase(), categoria: $('s-categoria').dataset.value, conta: $('s-conta').dataset.value, mes: $('s-mes').dataset.value, ano: $('s-ano').dataset.value};
   closeSheets();
   render();
 });
 $('s-clear').addEventListener('click', () => {
   activeFilters = {texto:'', categoria:'', conta:'', mes:'', ano:''};
-  $('s-texto').value=''; $('s-categoria').value=''; $('s-conta').value='';
+  $('s-texto').value='';
+  $('s-categoria').dataset.value=''; $('s-categoria').textContent='Todas';
+  $('s-conta').dataset.value=''; $('s-conta').textContent='Todas';
   $('s-mes').dataset.value=''; $('s-mes').textContent='Todos';
   $('s-ano').dataset.value=''; $('s-ano').textContent='Todos';
   render();
@@ -1299,14 +1322,16 @@ function render(){
   ).join('') || '<div class="mini-stat"><div class="l">Sem gastos ainda</div></div>';
 
   renderFatura();
-  renderRanking(cur);
+  renderRanking();
   renderCharts();
   renderEvolution();
   renderRecent();
 }
 
-function renderRanking(cur){
-  const top = [...cur].sort((a,b)=>b.valor-a.valor).slice(0,5);
+function renderRanking(){
+  const key = new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0');
+  const realMonthTx = transactions.filter(t => effectiveMonthKey(t) === key);
+  const top = [...realMonthTx].sort((a,b)=>b.valor-a.valor).slice(0,5);
   const c = $('rank-container');
   if(top.length===0){ c.innerHTML = '<div class="empty-state">Sem gastos neste mês.</div>'; return; }
   c.innerHTML = '<div class="rank-list">' + top.map((t,i) => `
