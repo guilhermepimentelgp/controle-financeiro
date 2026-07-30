@@ -102,9 +102,10 @@
   }
   .cmp-row{font-size:.75rem;color:var(--ink-soft);margin-top:.5rem;}
   .cmp-row b{color:var(--ink);}
-  .cmp-badge{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:.3rem .6rem;font-size:.72rem;font-weight:600;margin-top:.7rem;}
+  .cmp-badge{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:.3rem .6rem;font-size:.72rem;font-weight:600;}
   .cmp-badge.up{background:var(--despesa-bg);color:var(--despesa);}
   .cmp-badge.down{background:var(--accent-bg);color:var(--accent);}
+  #cmp-mes{min-height:1.85rem;display:flex;align-items:center;justify-content:center;margin-top:.6rem;}
   .mini-stats{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.9rem;}
   .mini-stat{background:var(--surface-2);border-radius:9px;padding:.55rem .7rem;flex:1;min-width:90px;}
   .mini-stat .l{font-size:.65rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
@@ -125,7 +126,7 @@
     box-shadow:0 8px 28px rgba(0,0,0,.16);
   }
   .panel.open{display:block;}
-  #picker-panel{z-index:96;}
+  #picker-panel, #time-panel{z-index:96;}
   .panel h2{font-family:'Manrope',sans-serif;font-size:1rem;font-weight:600;margin:0 0 .9rem;}
   label{display:block;font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:.7rem 0 .3rem;}
   input,select{width:100%;padding:.6rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:'Inter';font-size:.9rem;}
@@ -146,6 +147,13 @@
   .picker-check{color:var(--bg);font-weight:800;font-size:.9rem;}
   .picker-icon{margin-right:.5rem;font-size:1rem;}
   .field-btn .picker-icon{margin-right:.4rem;}
+  .time-wheels{display:flex;align-items:center;justify-content:center;gap:.5rem;position:relative;height:190px;margin:.2rem 0 .4rem;}
+  .time-wheel-highlight{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px;background:var(--surface-2);border-radius:10px;pointer-events:none;z-index:0;}
+  .time-wheel-frame{position:relative;z-index:1;height:190px;width:64px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-ms-overflow-style:none;padding:73px 0;box-sizing:border-box;}
+  .time-wheel-frame::-webkit-scrollbar{display:none;}
+  .time-wheel-frame .twi{height:44px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-family:'Manrope',sans-serif;font-size:1.05rem;font-weight:600;color:var(--ink-soft);opacity:.4;transition:opacity .15s,font-size .15s,color .15s;}
+  .time-wheel-frame .twi.active{opacity:1;font-size:1.55rem;font-weight:700;color:var(--ink);}
+  .time-colon{position:relative;z-index:1;font-family:'Manrope',sans-serif;font-size:1.55rem;font-weight:700;color:var(--ink);flex-shrink:0;}
   input:focus,select:focus{outline:1px solid var(--ink);}
   .row2{display:flex;gap:.6rem;}
   .row2 > div{flex:1;}
@@ -191,7 +199,8 @@
   .ledger .lr-swipe-wrap:last-child{border-bottom:none;}
   .ledger .lr-swipe-wrap:first-child{border-top-left-radius:13px;border-top-right-radius:13px;}
   .ledger .lr-swipe-wrap:last-child{border-bottom-left-radius:13px;border-bottom-right-radius:13px;}
-  .lr-actions-behind{position:absolute;top:0;right:0;bottom:0;display:flex;}
+  .lr-actions-behind{position:absolute;top:0;right:0;bottom:0;display:flex;pointer-events:none;}
+  .lr-swipe-wrap.actions-ready .lr-actions-behind{pointer-events:auto;}
   .lr-actions-behind button{width:64px;border:none;color:var(--surface);font-size:.72rem;font-weight:600;cursor:pointer;touch-action:manipulation;}
   .lr-actions-behind .edit{background:var(--ink-soft);}
   .lr-actions-behind .del{background:var(--despesa);}
@@ -491,7 +500,8 @@
     </div>
     <div id="f-time-wrap" style="display:none;">
       <label>Horário do gasto</label>
-      <input id="f-time" type="time">
+      <button type="button" class="field-btn" id="f-time-btn">--:--</button>
+      <input type="hidden" id="f-time">
     </div>
     <div class="row2">
       <div><label>Categoria</label><button type="button" class="field-btn" id="f-categoria" data-value=""></button></div>
@@ -529,6 +539,22 @@
       <button id="picker-close" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
     </div>
     <div id="picker-list" style="max-height:52vh;overflow-y:auto;"></div>
+  </div>
+
+  <div class="panel" id="time-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
+      <h2 style="margin:0;">Horário do gasto</h2>
+      <button id="time-close" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
+    </div>
+    <div class="time-wheels">
+      <div class="time-wheel-highlight"></div>
+      <div class="time-wheel-frame" id="time-wheel-h"></div>
+      <div class="time-colon">:</div>
+      <div class="time-wheel-frame" id="time-wheel-m"></div>
+    </div>
+    <div class="save-row">
+      <button class="btn-save" id="time-confirm" style="width:100%;flex:1;">Confirmar</button>
+    </div>
   </div>
 
   <div id="extrato-screen">
@@ -602,6 +628,9 @@ let chartCat, chartConta, chartEvol;
 
 const $ = id => document.getElementById(id);
 
+// Painéis que EMPILHAM sobre outra caixa já aberta, em vez de fechá-la (ex: escolher
+// categoria durante o preenchimento do formulário de novo gasto).
+const STACKED_PANEL_IDS = ['picker-panel', 'time-panel'];
 function openSheet(id){
   document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
   $(id).classList.add('open');
@@ -611,11 +640,13 @@ function closeSheets(){
   document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
   $('sheet-backdrop').classList.remove('open');
 }
-// Fecha tudo, exceto quando o seletor (picker-panel) está empilhado sobre outra caixa:
-// nesse caso, um toque no fundo escurecido só fecha o seletor, mantendo a caixa de trás aberta.
+// Fecha tudo, exceto quando um seletor empilhado (categoria/conta/hora) está aberto por
+// cima de outra caixa: nesse caso, um toque no fundo escurecido só fecha o seletor,
+// mantendo a caixa de trás aberta.
 $('sheet-backdrop').addEventListener('click', () => {
-  if($('picker-panel').classList.contains('open')){
-    closePickerOverlay();
+  const openStacked = STACKED_PANEL_IDS.find(id => $(id).classList.contains('open'));
+  if(openStacked){
+    closeStackedOverlay(openStacked);
   } else {
     closeSheets();
   }
@@ -623,18 +654,20 @@ $('sheet-backdrop').addEventListener('click', () => {
 
 // ---------- SELETOR CUSTOMIZADO (substitui o <select> nativo) ----------
 // Diferente de openSheet(), este NÃO fecha a caixa que já estiver aberta por trás —
-// ele empilha o seletor por cima dela, e closePickerOverlay() remove só essa camada.
-function openPickerOverlay(){
-  $('picker-panel').classList.add('open');
+// ele empilha o seletor por cima dela, e closeStackedOverlay() remove só essa camada.
+function openStackedOverlay(id){
+  $(id).classList.add('open');
   $('sheet-backdrop').classList.add('open');
 }
-function closePickerOverlay(){
-  $('picker-panel').classList.remove('open');
+function closeStackedOverlay(id){
+  $(id).classList.remove('open');
   // Se não sobrou nenhuma outra caixa aberta por trás, esconde o fundo escurecido também
   if(!document.querySelector('.panel.open')){
     $('sheet-backdrop').classList.remove('open');
   }
 }
+function openPickerOverlay(){ openStackedOverlay('picker-panel'); }
+function closePickerOverlay(){ closeStackedOverlay('picker-panel'); }
 function openPicker(btnId, title, options, onSelect){
   const btn = $(btnId);
   const currentValue = btn.dataset.value;
@@ -657,6 +690,60 @@ function openPicker(btnId, title, options, onSelect){
   });
   openPickerOverlay();
 }
+
+// ---------- SELETOR DE HORA (rolagem, substitui o <input type="time"> nativo) ----------
+const TIME_ITEM_H = 44;
+function setTimeValue(hhmm){
+  $('f-time').value = hhmm || '';
+  $('f-time-btn').textContent = hhmm || '--:--';
+}
+function buildTimeWheel(id, max){
+  const el = $(id);
+  el.innerHTML = '';
+  for(let i = 0; i <= max; i++){
+    const v = String(i).padStart(2, '0');
+    const item = document.createElement('div');
+    item.className = 'twi';
+    item.textContent = v;
+    item.dataset.v = v;
+    el.appendChild(item);
+  }
+}
+function highlightTimeWheel(id){
+  const el = $(id);
+  const idx = Math.max(0, Math.min(el.children.length - 1, Math.round(el.scrollTop / TIME_ITEM_H)));
+  Array.from(el.children).forEach((c, i) => c.classList.toggle('active', i === idx));
+}
+function readTimeWheel(id){
+  const el = $(id);
+  const idx = Math.max(0, Math.min(el.children.length - 1, Math.round(el.scrollTop / TIME_ITEM_H)));
+  return el.children[idx].dataset.v;
+}
+['time-wheel-h', 'time-wheel-m'].forEach(id => {
+  $(id).addEventListener('scroll', () => highlightTimeWheel(id), {passive: true});
+});
+function openTimePicker(){
+  const cur = $('f-time').value || nowTimeStr();
+  const [h, m] = cur.split(':').map(Number);
+  buildTimeWheel('time-wheel-h', 23);
+  buildTimeWheel('time-wheel-m', 59);
+  openStackedOverlay('time-panel');
+  // Posiciona a rolagem sem animação, exatamente no valor atual
+  requestAnimationFrame(() => {
+    $('time-wheel-h').scrollTop = h * TIME_ITEM_H;
+    $('time-wheel-m').scrollTop = m * TIME_ITEM_H;
+    highlightTimeWheel('time-wheel-h');
+    highlightTimeWheel('time-wheel-m');
+  });
+}
+$('f-time-btn').addEventListener('click', openTimePicker);
+$('time-close').addEventListener('click', () => closeStackedOverlay('time-panel'));
+$('time-confirm').addEventListener('click', () => {
+  const h = readTimeWheel('time-wheel-h');
+  const m = readTimeWheel('time-wheel-m');
+  setTimeValue(h + ':' + m);
+  closeStackedOverlay('time-panel');
+});
 $('picker-close').addEventListener('click', closePickerOverlay);
 
 const fmtBRL = v => (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
@@ -1029,7 +1116,7 @@ function todayStr(){ return localDateStr(); }
 function nowTimeStr(){ return new Date().toTimeString().slice(0,5); }
 function updateTimeFieldVisibility(){
   $('f-time-wrap').style.display = 'block';
-  if(!$('f-time').value) $('f-time').value = nowTimeStr();
+  if(!$('f-time').value) setTimeValue(nowTimeStr());
 }
 $('f-data').addEventListener('change', updateTimeFieldVisibility);
 
@@ -1056,7 +1143,7 @@ function parseValorInput(str){
 $('f-valor').addEventListener('input', () => formatValorInput($('f-valor')));
 
 function clearForm(){
-  $('f-desc').value=''; $('f-valor').value=''; $('f-rec-n').value=''; $('f-time').value=''; $('f-pagamento').value='';
+  $('f-desc').value=''; $('f-valor').value=''; $('f-rec-n').value=''; setTimeValue(''); $('f-pagamento').value='';
   $('f-rec-on').checked = false; $('rec-n-wrap').style.display='none';
   $('f-time-wrap').style.display = 'none';
   $('pagamento-wrap').style.display = 'none';
@@ -1142,7 +1229,7 @@ window.editTransaction = (id) => {
   $('f-conta').dataset.value = t.accountId;
   $('f-conta').innerHTML = editAcc ? `<span class="picker-icon">${editAcc.icon||'💳'}</span><span>${escapeHtml(editAcc.name)}</span>` : '';
   $('rec-wrap').style.display = 'none';
-  $('f-time').value = t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '';
+  setTimeValue(t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '');
   $('f-pagamento').value = t.paymentDate || '';
   updateTimeFieldVisibility();
   updatePagamentoVisibility();
@@ -1514,6 +1601,10 @@ document.addEventListener('click', () => { closeRowMenus(); closeAllSwipes(); })
 window.closeAllSwipes = () => {
   document.querySelectorAll('.ledger-row[data-swiped="1"]').forEach(row => {
     row.dataset.swiped = '0';
+    if(row.parentElement){
+      clearTimeout(row.parentElement._readyTimer);
+      row.parentElement.classList.remove('actions-ready');
+    }
     row.style.transition = 'transform .25s cubic-bezier(.22,1.2,.36,1)';
     row.style.transform = 'translateX(0)';
   });
@@ -1554,8 +1645,21 @@ function initSwipeRows(containerSelector){
         const dx = e.clientX - startX;
         const shouldOpen = (baseX === 0 && dx < -30) || (baseX === maxReveal && dx < 30);
         row.dataset.swiped = shouldOpen ? '1' : '0';
+        const wrap = row.parentElement;
+        if(wrap) clearTimeout(wrap._readyTimer);
+        if(!shouldOpen && wrap) wrap.classList.remove('actions-ready');
         row.style.transition = 'transform .25s cubic-bezier(.22,1.2,.36,1)';
         row.style.transform = 'translateX(' + (shouldOpen ? maxReveal : 0) + 'px)';
+        if(shouldOpen && wrap){
+          // Libera o toque nos botões só depois que a animação de revelar (250ms)
+          // termina de verdade. Um tempo fixo é mais confiável que esperar o evento
+          // "transitionend": se o arraste já parar exatamente na posição final, o
+          // navegador não considera que houve mudança de valor e esse evento nunca
+          // dispara — o que deixaria os botões travados para sempre.
+          wrap._readyTimer = setTimeout(() => {
+            if(row.dataset.swiped === '1') wrap.classList.add('actions-ready');
+          }, 260);
+        }
       }
       dragging = false; decided = false; pid = null;
     }
