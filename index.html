@@ -105,7 +105,7 @@
   .cmp-badge{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:.3rem .6rem;font-size:.72rem;font-weight:600;}
   .cmp-badge.up{background:var(--despesa-bg);color:var(--despesa);}
   .cmp-badge.down{background:var(--accent-bg);color:var(--accent);}
-  #cmp-mes{min-height:1.85rem;display:flex;align-items:center;justify-content:center;margin-top:.6rem;}
+  #cmp-mes{margin-top:.5rem;}
   .mini-stats{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.9rem;}
   .mini-stat{background:var(--surface-2);border-radius:9px;padding:.55rem .7rem;flex:1;min-width:90px;}
   .mini-stat .l{font-size:.65rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
@@ -363,14 +363,12 @@
                   <button id="open-extrato" style="background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;padding:0;">Ver extrato <span style="font-size:.8rem;">›</span></button>
                 </div>
                 <div class="saldo-valor" id="total-mes">R$ 0,00</div>
-              </div>
-              <div>
-                <div class="month-nav">
-                  <button id="prev-month">‹</button>
-                  <div class="month-label" id="month-label">—</div>
-                  <button id="next-month">›</button>
-                </div>
                 <div id="cmp-mes"></div>
+              </div>
+              <div class="month-nav">
+                <button id="prev-month">‹</button>
+                <div class="month-label" id="month-label">—</div>
+                <button id="next-month">›</button>
               </div>
             </div>
           </div>
