@@ -1426,7 +1426,7 @@ function render(){
   cur.forEach(t => { byAcc[t.accountId] = (byAcc[t.accountId]||0)+t.valor; });
   $('mini-stats-contas').innerHTML = accounts.filter(a=>byAcc[a.id]).map(a =>
     `<div class="mini-stat"><div class="l">${a.icon||''} ${escapeHtml(a.name)}</div><div class="v">${fmtBRL(byAcc[a.id])}</div></div>`
-  ).join('') || '<div class="mini-stat"><div class="l">Sem gastos ainda</div></div>';
+  ).join('') || '<div class="mini-stat"><div class="l">Sem gastos ainda</div><div class="v">&nbsp;</div></div>';
 
   renderFatura();
   renderRanking();
