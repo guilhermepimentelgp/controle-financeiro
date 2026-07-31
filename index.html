@@ -127,6 +127,7 @@
   }
   .panel.open{display:block;}
   #picker-panel, #time-panel{z-index:96;}
+  #icon-panel{z-index:97;}
   .panel h2{font-family:'Manrope',sans-serif;font-size:1rem;font-weight:600;margin:0 0 .9rem;}
   label{display:block;font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:.7rem 0 .3rem;}
   input,select{width:100%;padding:.6rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:'Inter';font-size:.9rem;}
@@ -173,10 +174,15 @@
 
   .chip-row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.4rem;}
   .chip{display:flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:.3rem .5rem .3rem .8rem;font-size:.78rem;}
-  .chip button{border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:.85rem;padding:0 .2rem;}
+  .chip-main{display:flex;align-items:center;gap:6px;background:none;border:none;font:inherit;color:inherit;cursor:pointer;padding:0;}
+  .chip button:not(.chip-main){border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:.85rem;padding:0 .2rem;}
   .add-chip-row{display:flex;gap:.5rem;margin-top:.6rem;}
   .add-chip-row input{flex:1;}
   .add-chip-row button{border-radius:8px;border:1px solid var(--line);background:var(--surface-2);padding:0 .8rem;cursor:pointer;font-size:.85rem;}
+  .icon-pick-btn{width:40px;height:40px;flex-shrink:0;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .icon-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.5rem;max-height:44vh;overflow-y:auto;}
+  .icon-grid button{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .icon-grid button.selected{background:var(--ink);border-color:var(--ink);}
 
   .section-title{font-family:'Manrope',sans-serif;font-size:.92rem;font-weight:600;margin:1.6rem 0 .7rem;display:flex;align-items:center;justify-content:space-between;}
   .section-title .count{font-family:'Inter';font-size:.7rem;color:var(--ink-soft);font-weight:400;}
@@ -454,7 +460,11 @@
   <div id="tab-ajustes" class="tab-page">
     <div class="section-title" style="margin-top:.2rem;">Categorias</div>
     <div class="chip-row" id="cat-chips"></div>
-    <div class="add-chip-row"><input id="new-cat" placeholder="Nova categoria"><button id="add-cat">+</button></div>
+    <div class="add-chip-row">
+      <button type="button" class="icon-pick-btn" id="new-cat-icon" data-icon="✳">✳</button>
+      <input id="new-cat" placeholder="Nova categoria">
+      <button id="add-cat">+</button>
+    </div>
 
     <div class="section-title">Contas / formas de pagamento</div>
     <div class="chip-row" id="acc-chips"></div>
@@ -555,6 +565,31 @@
     </div>
   </div>
 
+  <div class="panel" id="cat-edit-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
+      <h2 style="margin:0;">Editar categoria</h2>
+      <button id="cat-edit-close" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
+    </div>
+    <label>Ícone</label>
+    <button type="button" class="icon-pick-btn" id="cat-edit-icon" style="width:52px;height:52px;font-size:1.6rem;">✳</button>
+    <label>Nome</label>
+    <input id="cat-edit-name" placeholder="Nome da categoria">
+    <div class="save-row">
+      <button class="btn-cancel" id="cat-edit-delete" style="color:var(--despesa);">Excluir</button>
+      <button class="btn-save" id="cat-edit-save">Salvar</button>
+    </div>
+  </div>
+
+  <div class="panel" id="icon-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
+      <h2 style="margin:0;">Escolher ícone</h2>
+      <button id="icon-close" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
+    </div>
+    <div class="icon-grid" id="icon-grid"></div>
+    <label>Ou digite outro emoji</label>
+    <input id="icon-custom-input" maxlength="4" placeholder="Use o teclado de emoji do celular" style="text-align:center;font-size:1.3rem;">
+  </div>
+
   <div id="extrato-screen">
     <div class="extrato-header">
       <div class="extrato-title">Extrato completo</div>
@@ -627,24 +662,27 @@ let chartCat, chartConta, chartEvol;
 const $ = id => document.getElementById(id);
 
 // Painéis que EMPILHAM sobre outra caixa já aberta, em vez de fechá-la (ex: escolher
-// categoria durante o preenchimento do formulário de novo gasto).
-const STACKED_PANEL_IDS = ['picker-panel', 'time-panel'];
+// categoria durante o preenchimento do formulário de novo gasto, ou escolher um ícone
+// durante a edição de uma categoria). Guardamos uma pilha de verdade, porque esses
+// painéis podem se empilhar em mais de um nível (ex: ícone sobre editar categoria).
+let overlayStack = [];
 function openSheet(id){
   document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
+  overlayStack = [];
   $(id).classList.add('open');
   $('sheet-backdrop').classList.add('open');
 }
 function closeSheets(){
   document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
+  overlayStack = [];
   $('sheet-backdrop').classList.remove('open');
 }
-// Fecha tudo, exceto quando um seletor empilhado (categoria/conta/hora) está aberto por
-// cima de outra caixa: nesse caso, um toque no fundo escurecido só fecha o seletor,
-// mantendo a caixa de trás aberta.
+// Fecha tudo, exceto quando algum seletor empilhado está aberto por cima de outra caixa:
+// nesse caso, um toque no fundo escurecido só fecha a camada mais no topo, mantendo o
+// resto aberto atrás.
 $('sheet-backdrop').addEventListener('click', () => {
-  const openStacked = STACKED_PANEL_IDS.find(id => $(id).classList.contains('open'));
-  if(openStacked){
-    closeStackedOverlay(openStacked);
+  if(overlayStack.length){
+    closeStackedOverlay(overlayStack[overlayStack.length - 1]);
   } else {
     closeSheets();
   }
@@ -656,9 +694,12 @@ $('sheet-backdrop').addEventListener('click', () => {
 function openStackedOverlay(id){
   $(id).classList.add('open');
   $('sheet-backdrop').classList.add('open');
+  overlayStack = overlayStack.filter(x => x !== id);
+  overlayStack.push(id);
 }
 function closeStackedOverlay(id){
   $(id).classList.remove('open');
+  overlayStack = overlayStack.filter(x => x !== id);
   // Se não sobrou nenhuma outra caixa aberta por trás, esconde o fundo escurecido também
   if(!document.querySelector('.panel.open')){
     $('sheet-backdrop').classList.remove('open');
@@ -743,6 +784,37 @@ $('time-confirm').addEventListener('click', () => {
   closeStackedOverlay('time-panel');
 });
 $('picker-close').addEventListener('click', closePickerOverlay);
+
+// ---------- SELETOR DE ÍCONE (grade de emojis) ----------
+const ICON_CHOICES = ['🍽','🏠','📄','🚗','⚕','📚','🎬','🛍','✳',
+  '🍔','☕','🍺','🛒','💊','🏥','🎓','🎮','✈️','👕','🐾','🎁','💡','📱',
+  '💇','⚽','📺','🖥️','💰','🏦','💳','🚌','⛽','🚕','🧾','🎵','🍿','🌱',
+  '🎉','👶','🎂','🧴','🛠️','🎨'];
+let iconPickerCallback = null;
+function buildIconGrid(current){
+  $('icon-grid').innerHTML = ICON_CHOICES.map(ic =>
+    `<button type="button" class="${ic === current ? 'selected' : ''}" data-icon="${ic}">${ic}</button>`
+  ).join('');
+  $('icon-grid').querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(iconPickerCallback) iconPickerCallback(btn.dataset.icon);
+      closeStackedOverlay('icon-panel');
+    });
+  });
+}
+function openIconPicker(current, onSelect){
+  iconPickerCallback = onSelect;
+  $('icon-custom-input').value = '';
+  buildIconGrid(current);
+  openStackedOverlay('icon-panel');
+}
+$('icon-close').addEventListener('click', () => closeStackedOverlay('icon-panel'));
+$('icon-custom-input').addEventListener('input', () => {
+  const v = $('icon-custom-input').value.trim();
+  if(!v) return;
+  if(iconPickerCallback) iconPickerCallback(v);
+  closeStackedOverlay('icon-panel');
+});
 
 const fmtBRL = v => (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 function localDateStr(d){
@@ -1011,7 +1083,9 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
 // ---------- SETTINGS (aba Ajustes) ----------
 
 function renderSettingsPanel(){
-  $('cat-chips').innerHTML = categories.map(c => `<span class="chip">${c.icon||'✳'} ${escapeHtml(c.name)}<button onclick="deleteCategory('${c.id}')">×</button></span>`).join('');
+  $('cat-chips').innerHTML = categories.map(c =>
+    `<span class="chip"><button type="button" class="chip-main" onclick="openCatEdit('${c.id}')">${c.icon||'✳'} ${escapeHtml(c.name)}</button><button onclick="deleteCategory('${c.id}')">×</button></span>`
+  ).join('');
   $('acc-chips').innerHTML = accounts.map(a => `<span class="chip">${a.icon||'💳'} ${escapeHtml(a.name)}<button onclick="deleteAccount('${a.id}')">×</button></span>`).join('');
   $('pin-status').textContent = settings.pinHash ? 'PIN ativado.' : 'Nenhum PIN definido.';
   $('closing-day').value = settings.closingDay || 30;
@@ -1025,14 +1099,23 @@ $('save-closing-day').addEventListener('click', async () => {
   $('closing-day-status').textContent = 'Salvo.';
   render();
 });
+$('new-cat-icon').addEventListener('click', () => {
+  openIconPicker($('new-cat-icon').dataset.icon, icon => {
+    $('new-cat-icon').dataset.icon = icon;
+    $('new-cat-icon').textContent = icon;
+  });
+});
 $('add-cat').addEventListener('click', async () => {
   const name = $('new-cat').value.trim();
   if(!name) return;
+  const icon = $('new-cat-icon').dataset.icon || '✳';
   const ref = col('categories').doc();
-  const data = {name, icon:'✳'};
+  const data = {name, icon};
   await ref.set(data);
   categories.push({id: ref.id, ...data});
   $('new-cat').value = '';
+  $('new-cat-icon').dataset.icon = '✳';
+  $('new-cat-icon').textContent = '✳';
   populateSelects(); renderSettingsPanel(); render();
 });
 $('add-acc').addEventListener('click', async () => {
@@ -1046,7 +1129,45 @@ $('add-acc').addEventListener('click', async () => {
   $('new-acc').value = '';
   populateSelects(); renderSettingsPanel(); render();
 });
+
+// ---------- EDITAR CATEGORIA (nome + ícone) ----------
+let catEditId = null;
+window.openCatEdit = id => {
+  const c = categories.find(x => x.id === id);
+  if(!c) return;
+  catEditId = id;
+  $('cat-edit-icon').textContent = c.icon || '✳';
+  $('cat-edit-icon').dataset.icon = c.icon || '✳';
+  $('cat-edit-name').value = c.name;
+  openSheet('cat-edit-panel');
+};
+$('cat-edit-close').addEventListener('click', closeSheets);
+$('cat-edit-icon').addEventListener('click', () => {
+  openIconPicker($('cat-edit-icon').dataset.icon, icon => {
+    $('cat-edit-icon').dataset.icon = icon;
+    $('cat-edit-icon').textContent = icon;
+  });
+});
+$('cat-edit-save').addEventListener('click', async () => {
+  const name = $('cat-edit-name').value.trim();
+  if(!name || !catEditId) return;
+  const icon = $('cat-edit-icon').dataset.icon || '✳';
+  await col('categories').doc(catEditId).update({name, icon});
+  const c = categories.find(x => x.id === catEditId);
+  if(c){ c.name = name; c.icon = icon; }
+  closeSheets();
+  populateSelects(); renderSettingsPanel(); render();
+});
+$('cat-edit-delete').addEventListener('click', async () => {
+  if(!catEditId) return;
+  const id = catEditId;
+  closeSheets();
+  await deleteCategory(id);
+});
 window.deleteCategory = async id => {
+  const c = categories.find(x => x.id === id);
+  const choice = await showConfirm('Excluir categoria?', c ? `"${c.name}" será removida. Lançamentos que já usam essa categoria não serão apagados.` : 'Essa ação não pode ser desfeita.');
+  if(choice !== 'ok') return;
   await col('categories').doc(id).delete();
   categories = categories.filter(c => c.id !== id);
   populateSelects(); renderSettingsPanel(); render();
