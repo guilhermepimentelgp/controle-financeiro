@@ -183,6 +183,7 @@
   .icon-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.5rem;max-height:44vh;overflow-y:auto;}
   .icon-grid button{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .icon-grid button.selected{background:var(--ink);border-color:var(--ink);}
+  #icon-custom-input::placeholder{font-size:.78rem;color:var(--ink-soft);}
 
   .section-title{font-family:'Manrope',sans-serif;font-size:.92rem;font-weight:600;margin:1.6rem 0 .7rem;display:flex;align-items:center;justify-content:space-between;}
   .section-title .count{font-family:'Inter';font-size:.7rem;color:var(--ink-soft);font-weight:400;}
@@ -587,7 +588,10 @@
     </div>
     <div class="icon-grid" id="icon-grid"></div>
     <label>Ou digite outro emoji</label>
-    <input id="icon-custom-input" maxlength="4" placeholder="Use o teclado de emoji do celular" style="text-align:center;font-size:1.3rem;">
+    <div style="display:flex;gap:.5rem;">
+      <input id="icon-custom-input" maxlength="8" placeholder="Toque e use o teclado de emoji" style="text-align:center;font-size:1.3rem;flex:1;min-width:0;">
+      <button type="button" class="btn-save" id="icon-custom-use" style="flex:0 0 auto;padding:0 1rem;">Usar</button>
+    </div>
   </div>
 
   <div id="extrato-screen">
@@ -809,11 +813,15 @@ function openIconPicker(current, onSelect){
   openStackedOverlay('icon-panel');
 }
 $('icon-close').addEventListener('click', () => closeStackedOverlay('icon-panel'));
-$('icon-custom-input').addEventListener('input', () => {
+function confirmCustomIcon(){
   const v = $('icon-custom-input').value.trim();
   if(!v) return;
   if(iconPickerCallback) iconPickerCallback(v);
   closeStackedOverlay('icon-panel');
+}
+$('icon-custom-use').addEventListener('click', confirmCustomIcon);
+$('icon-custom-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); confirmCustomIcon(); }
 });
 
 const fmtBRL = v => (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
