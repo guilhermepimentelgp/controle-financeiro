@@ -184,7 +184,7 @@
   .icon-grid button{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .icon-grid button.selected{background:var(--ink);border-color:var(--ink);}
   .icon-grid-empty{grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:.78rem;padding:1.2rem .5rem;line-height:1.5;}
-  #icon-custom-input{font-size:.82rem;color:var(--ink);}
+  #icon-custom-input{font-size:.82rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #icon-custom-input::placeholder{font-size:.82rem;color:var(--ink-soft);}
   #icon-custom-input::-webkit-input-placeholder{font-size:.82rem;color:var(--ink-soft);}
   #icon-custom-input:-ms-input-placeholder{font-size:.82rem;color:var(--ink-soft);}
@@ -592,10 +592,10 @@
       <button id="icon-close" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
     </div>
     <div class="icon-grid" id="icon-grid"></div>
-    <label>Ou digite outro emoji</label>
-    <div style="display:flex;gap:.5rem;">
-      <input id="icon-custom-input" maxlength="24" placeholder="Toque e use o teclado de emoji" style="text-align:center;flex:1;min-width:0;">
-      <button type="button" class="btn-save" id="icon-custom-use" style="flex:0 0 auto;padding:0 1rem;">Usar</button>
+    <label>Ou busque por nome</label>
+    <input id="icon-custom-input" maxlength="24" placeholder="Ex: pizza, carro, casa..." style="text-align:left;">
+    <div style="display:flex;justify-content:flex-end;margin-top:.6rem;">
+      <button type="button" class="btn-save" id="icon-custom-use" style="flex:0 0 auto;padding:.5rem 1.4rem;">Usar</button>
     </div>
   </div>
 
