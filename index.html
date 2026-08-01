@@ -183,7 +183,12 @@
   .icon-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.5rem;max-height:44vh;overflow-y:auto;}
   .icon-grid button{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .icon-grid button.selected{background:var(--ink);border-color:var(--ink);}
-  #icon-custom-input::placeholder{font-size:.78rem;color:var(--ink-soft);}
+  .icon-grid-empty{grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:.78rem;padding:1.2rem .5rem;line-height:1.5;}
+  #icon-custom-input{font-size:.82rem;color:var(--ink);}
+  #icon-custom-input::placeholder{font-size:.82rem;color:var(--ink-soft);}
+  #icon-custom-input::-webkit-input-placeholder{font-size:.82rem;color:var(--ink-soft);}
+  #icon-custom-input:-ms-input-placeholder{font-size:.82rem;color:var(--ink-soft);}
+  #icon-custom-input::-moz-placeholder{font-size:.82rem;color:var(--ink-soft);opacity:1;}
 
   .section-title{font-family:'Manrope',sans-serif;font-size:.92rem;font-weight:600;margin:1.6rem 0 .7rem;display:flex;align-items:center;justify-content:space-between;}
   .section-title .count{font-family:'Inter';font-size:.7rem;color:var(--ink-soft);font-weight:400;}
@@ -589,7 +594,7 @@
     <div class="icon-grid" id="icon-grid"></div>
     <label>Ou digite outro emoji</label>
     <div style="display:flex;gap:.5rem;">
-      <input id="icon-custom-input" maxlength="8" placeholder="Toque e use o teclado de emoji" style="text-align:center;font-size:1.3rem;flex:1;min-width:0;">
+      <input id="icon-custom-input" maxlength="24" placeholder="Toque e use o teclado de emoji" style="text-align:center;flex:1;min-width:0;">
       <button type="button" class="btn-save" id="icon-custom-use" style="flex:0 0 auto;padding:0 1rem;">Usar</button>
     </div>
   </div>
@@ -789,15 +794,67 @@ $('time-confirm').addEventListener('click', () => {
 });
 $('picker-close').addEventListener('click', closePickerOverlay);
 
-// ---------- SELETOR DE ÍCONE (grade de emojis) ----------
-const ICON_CHOICES = ['🍽','🏠','📄','🚗','⚕','📚','🎬','🛍','✳',
-  '🍔','☕','🍺','🛒','💊','🏥','🎓','🎮','✈️','👕','🐾','🎁','💡','📱',
-  '💇','⚽','📺','🖥️','💰','🏦','💳','🚌','⛽','🚕','🧾','🎵','🍿','🌱',
-  '🎉','👶','🎂','🧴','🛠️','🎨'];
+// ---------- SELETOR DE ÍCONE (grade de emojis, com busca por palavra-chave) ----------
+const ICON_CHOICES = [
+  {i:'✳', k:'outro geral padrão'},
+  {i:'🍽', k:'alimentação comida restaurante prato refeição almoço jantar'},
+  {i:'🍕', k:'pizza'},
+  {i:'🍔', k:'hambúrguer lanche burguer fast food'},
+  {i:'☕', k:'café cafeteria'},
+  {i:'🍺', k:'bebida cerveja bar'},
+  {i:'🍿', k:'pipoca cinema lazer'},
+  {i:'🏠', k:'casa moradia aluguel imóvel'},
+  {i:'📄', k:'documento conta boleto fatura papel'},
+  {i:'🚗', k:'carro transporte veículo'},
+  {i:'🚕', k:'táxi uber corrida transporte'},
+  {i:'🚌', k:'ônibus transporte público'},
+  {i:'⛽', k:'combustível gasolina posto'},
+  {i:'⚕', k:'saúde médico'},
+  {i:'💊', k:'remédio farmácia medicamento'},
+  {i:'🏥', k:'hospital saúde clínica'},
+  {i:'📚', k:'educação livro escola estudo'},
+  {i:'🎓', k:'faculdade formatura educação curso'},
+  {i:'🎬', k:'cinema filme entretenimento'},
+  {i:'📺', k:'tv televisão streaming'},
+  {i:'🖥️', k:'computador tecnologia trabalho'},
+  {i:'📱', k:'celular telefone tecnologia'},
+  {i:'🎮', k:'jogo game videogame lazer'},
+  {i:'✈️', k:'viagem voo avião'},
+  {i:'👕', k:'roupa vestuário moda'},
+  {i:'🛍', k:'compras shopping'},
+  {i:'🛒', k:'mercado supermercado compras'},
+  {i:'🐾', k:'pet animal cachorro gato'},
+  {i:'🎁', k:'presente gift'},
+  {i:'💡', k:'luz energia conta'},
+  {i:'💰', k:'dinheiro finanças poupança'},
+  {i:'🏦', k:'banco finanças'},
+  {i:'💳', k:'cartão crédito pagamento'},
+  {i:'🧾', k:'recibo nota fiscal comprovante'},
+  {i:'🎵', k:'música streaming spotify'},
+  {i:'🌱', k:'planta jardim natureza'},
+  {i:'🎉', k:'festa comemoração evento'},
+  {i:'👶', k:'bebê criança filho'},
+  {i:'🎂', k:'aniversário bolo festa'},
+  {i:'🧴', k:'higiene beleza cosmético'},
+  {i:'🛠️', k:'ferramenta manutenção conserto'},
+  {i:'🎨', k:'arte hobby'},
+  {i:'💇', k:'cabelo salão beleza'},
+  {i:'⚽', k:'esporte futebol academia'},
+];
+function normalizeStr(s){
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
 let iconPickerCallback = null;
-function buildIconGrid(current){
-  $('icon-grid').innerHTML = ICON_CHOICES.map(ic =>
-    `<button type="button" class="${ic === current ? 'selected' : ''}" data-icon="${ic}">${ic}</button>`
+let iconPickerCurrent = null;
+function buildIconGrid(query){
+  const q = normalizeStr(query);
+  const list = q ? ICON_CHOICES.filter(o => normalizeStr(o.k).includes(q)) : ICON_CHOICES;
+  if(!list.length){
+    $('icon-grid').innerHTML = '<div class="icon-grid-empty">Nenhum ícone encontrado.<br>Toque em "Usar" para usar o emoji digitado.</div>';
+    return;
+  }
+  $('icon-grid').innerHTML = list.map(o =>
+    `<button type="button" class="${o.i === iconPickerCurrent ? 'selected' : ''}" data-icon="${o.i}">${o.i}</button>`
   ).join('');
   $('icon-grid').querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -808,8 +865,9 @@ function buildIconGrid(current){
 }
 function openIconPicker(current, onSelect){
   iconPickerCallback = onSelect;
+  iconPickerCurrent = current;
   $('icon-custom-input').value = '';
-  buildIconGrid(current);
+  buildIconGrid('');
   openStackedOverlay('icon-panel');
 }
 $('icon-close').addEventListener('click', () => closeStackedOverlay('icon-panel'));
@@ -819,6 +877,7 @@ function confirmCustomIcon(){
   if(iconPickerCallback) iconPickerCallback(v);
   closeStackedOverlay('icon-panel');
 }
+$('icon-custom-input').addEventListener('input', () => buildIconGrid($('icon-custom-input').value));
 $('icon-custom-use').addEventListener('click', confirmCustomIcon);
 $('icon-custom-input').addEventListener('keydown', e => {
   if(e.key === 'Enter'){ e.preventDefault(); confirmCustomIcon(); }
