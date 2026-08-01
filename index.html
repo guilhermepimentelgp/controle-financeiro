@@ -240,12 +240,16 @@
   .fatura-invoice-detail .fid-row{display:flex;justify-content:space-between;font-size:.78rem;color:var(--ink-soft);padding:.3rem 0;}
   .badge-aberta{font-size:.6rem;color:var(--pendente);background:var(--pendente-bg);padding:1px 6px;border-radius:5px;margin-left:.4rem;}
 
-  .lr-menu-wrap{position:relative;flex-shrink:0;}
-  .lr-menu-btn{background:none;border:none;color:var(--ink-soft);font-size:1rem;cursor:pointer;padding:.2rem .4rem;}
-  .lr-menu{display:none;position:fixed;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:100;min-width:100px;overflow:hidden;}
-  .lr-menu.open{display:block;}
-  .lr-menu button{display:block;width:100%;text-align:left;padding:.55rem .8rem;background:none;border:none;font-size:.8rem;color:var(--ink);cursor:pointer;}
-  .lr-menu button:hover{background:var(--surface-2);}
+  .lr-drag-hint{position:absolute;top:0;right:0;bottom:0;width:6px;background:var(--despesa);opacity:.5;z-index:2;pointer-events:none;}
+  .lr-swipe-wrap:has(.ledger-row[data-swiped="1"]) .lr-drag-hint{opacity:0;}
+  .lr-details{max-height:0;overflow:hidden;transition:max-height .25s ease;background:var(--surface-2);}
+  .lr-details.open{max-height:220px;}
+  .lr-details-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .8rem;padding:.8rem 1rem 0;font-size:.74rem;color:var(--ink);}
+  .lr-details-label{color:var(--ink-soft);font-size:.62rem;text-transform:uppercase;letter-spacing:.03em;margin-bottom:.1rem;}
+  .lr-details-actions{display:flex;gap:.6rem;padding:.8rem 1rem 1rem;}
+  .lr-details-actions button{flex:1;padding:.6rem;border-radius:9px;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem;touch-action:manipulation;}
+  .lr-detail-edit{border:1px solid var(--line);background:var(--surface);color:var(--ink);}
+  .lr-detail-del{border:1px solid var(--despesa);background:var(--despesa-bg);color:var(--despesa);}
   #export-btn{width:100%;padding:.7rem;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:.82rem;cursor:pointer;margin-top:1rem;}
   ::-webkit-scrollbar{display:none;}
 
@@ -1405,6 +1409,7 @@ $('save-form').addEventListener('click', async () => {
 window.editTransaction = (id) => {
   const t = transactions.find(x => x.id === id);
   if(!t) return;
+  closeExpandedCards();
   editingId = id;
   $('form-title').textContent = 'Editar gasto';
   $('f-desc').value = t.desc; $('f-valor').value = t.valor.toFixed(2).replace('.',','); $('f-data').value = t.date;
@@ -1425,6 +1430,7 @@ window.editTransaction = (id) => {
 window.deleteTransaction = async (id) => {
   const t = transactions.find(x => x.id === id);
   if(!t) return;
+  closeExpandedCards();
   if(t.recurringId){
     const choice = await showConfirm(
       'Lançamento recorrente',
@@ -1742,46 +1748,47 @@ function ledgerRowHTML(t){
   const meta = timeStr ? `${dateStr} · ${timeStr}` : `${dateStr} · ${escapeHtml(catName(t.categoryId))} · ${escapeHtml(accName(t.accountId))}`;
   const badge = t.status==='pendente' ? '<span class="badge badge-pendente">pendente</span>' : '';
   const recBadge = t.recurringId ? `<span class="badge badge-rec">${t.seq}/${t.total}</span>` : '';
+  const acc = accounts.find(a => a.id === t.accountId);
+  const recorrenteTxt = t.recurringId ? `Sim (${t.seq}/${t.total})` : 'Não';
+  const pagaEmTxt = (acc && acc.kind === 'credito' && t.paymentDate) ? new Date(t.paymentDate+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : null;
   return `<div class="lr-swipe-wrap">
     <div class="lr-actions-behind">
       <button class="edit" onclick="closeAllSwipes();editTransaction('${t.id}')">Editar</button>
       <button class="del" onclick="closeAllSwipes();deleteTransaction('${t.id}')">Excluir</button>
     </div>
+    <div class="lr-drag-hint" aria-hidden="true"></div>
     <div class="ledger-row" data-id="${t.id}">
       <div class="lr-cat">${catIcon(t.categoryId)}</div>
       <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
         <div class="lr-meta">${meta}</div></div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">
-        <div class="lr-val">${fmtBRL(t.valor)}</div>
-        <div class="lr-menu-wrap">
-          <button class="lr-menu-btn" onclick="toggleRowMenu(event,'${t.id}')" aria-label="Mais opções">⋮</button>
-          <div class="lr-menu" id="menu-${t.id}">
-            <button onclick="closeRowMenus();editTransaction('${t.id}')">Editar</button>
-            <button onclick="closeRowMenus();deleteTransaction('${t.id}')">Excluir</button>
-          </div>
-        </div>
+      <div class="lr-val">${fmtBRL(t.valor)}</div>
+    </div>
+    <div class="lr-details" id="details-${t.id}">
+      <div class="lr-details-grid">
+        <div><div class="lr-details-label">Conta</div>${acc ? (acc.icon||'💳') + ' ' + escapeHtml(acc.name) : '—'}</div>
+        <div><div class="lr-details-label">Recorrente</div>${recorrenteTxt}</div>
+        <div><div class="lr-details-label">Horário</div>${timeStr || '—'}</div>
+        ${pagaEmTxt ? `<div><div class="lr-details-label">Paga em</div>${pagaEmTxt}</div>` : ''}
+      </div>
+      <div class="lr-details-actions">
+        <button class="lr-detail-edit" onclick="editTransaction('${t.id}')">✏️ Editar</button>
+        <button class="lr-detail-del" onclick="deleteTransaction('${t.id}')">🗑️ Excluir</button>
       </div>
     </div>
   </div>`;
 }
-window.toggleRowMenu = (e, id) => {
-  e.stopPropagation();
-  closeAllSwipes();
-  const el = document.getElementById('menu-'+id);
-  const wasOpen = el && el.classList.contains('open');
-  closeRowMenus();
-  if(el && !wasOpen){
-    document.body.appendChild(el); // escapa de qualquer ancestral com transform/overflow
-    const btnRect = e.currentTarget.getBoundingClientRect();
-    const menuWidth = 100, menuHeight = 90;
-    const openUp = (window.innerHeight - btnRect.bottom) < menuHeight;
-    el.style.left = Math.min(btnRect.right - menuWidth, window.innerWidth - menuWidth - 8) + 'px';
-    el.style.top = openUp ? (btnRect.top - menuHeight) + 'px' : (btnRect.bottom + 4) + 'px';
-    el.classList.add('open');
-  }
+window.toggleCardExpand = row => {
+  const detailsEl = document.getElementById('details-' + row.dataset.id);
+  if(!detailsEl) return;
+  const willOpen = !detailsEl.classList.contains('open');
+  // só um card expandido por vez
+  document.querySelectorAll('.lr-details.open').forEach(el => el.classList.remove('open'));
+  if(willOpen) detailsEl.classList.add('open');
 };
-window.closeRowMenus = () => { document.querySelectorAll('.lr-menu.open').forEach(m => m.classList.remove('open')); };
-document.addEventListener('click', () => { closeRowMenus(); closeAllSwipes(); });
+function closeExpandedCards(){
+  document.querySelectorAll('.lr-details.open').forEach(el => el.classList.remove('open'));
+}
+document.addEventListener('click', () => { closeAllSwipes(); });
 
 // ---------- ARRASTAR PRA EDITAR/EXCLUIR ----------
 window.closeAllSwipes = () => {
@@ -1845,6 +1852,14 @@ function initSwipeRows(containerSelector){
           wrap._readyTimer = setTimeout(() => {
             if(row.dataset.swiped === '1') wrap.classList.add('actions-ready');
           }, 260);
+        }
+      } else if(!decided){
+        // Toque simples, sem arrasto: se a gaveta já estiver aberta, um toque na
+        // linha só fecha ela; caso contrário, alterna a expansão do card.
+        if(row.dataset.swiped === '1'){
+          closeAllSwipes();
+        } else {
+          toggleCardExpand(row);
         }
       }
       dragging = false; decided = false; pid = null;
