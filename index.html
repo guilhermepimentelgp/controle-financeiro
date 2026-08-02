@@ -25,6 +25,14 @@
     --despesa:#A3432B; --despesa-bg:#F3E1D9;
     --pendente:#A3771F; --pendente-bg:#F1E4C9;
     --accent:#2F6B4C; --accent-bg:#E1EAE1;
+    --cc-amber-bg:#FAEEDA; --cc-amber-fg:#854F0B;
+    --cc-blue-bg:#E6F1FB; --cc-blue-fg:#0C447C;
+    --cc-green-bg:#EAF3DE; --cc-green-fg:#27500A;
+    --cc-pink-bg:#FBEAF0; --cc-pink-fg:#72243E;
+    --cc-teal-bg:#E1F5EE; --cc-teal-fg:#085041;
+    --cc-purple-bg:#EEEDFE; --cc-purple-fg:#3C3489;
+    --cc-gray-bg:#F1EFE8; --cc-gray-fg:#444441;
+    --cc-coral-bg:#FAECE7; --cc-coral-fg:#712B13;
   }
   [data-theme="dark"]{
     --bg:#1B1D17; --surface:#252822; --surface-2:#2E3128;
@@ -32,6 +40,14 @@
     --despesa:#E28468; --despesa-bg:#3A2B24;
     --pendente:#E0B454; --pendente-bg:#3A331F;
     --accent:#6FBE94; --accent-bg:#233024;
+    --cc-amber-bg:#412402; --cc-amber-fg:#FAC775;
+    --cc-blue-bg:#042C53; --cc-blue-fg:#85B7EB;
+    --cc-green-bg:#173404; --cc-green-fg:#97C459;
+    --cc-pink-bg:#4B1528; --cc-pink-fg:#ED93B1;
+    --cc-teal-bg:#04342C; --cc-teal-fg:#5DCAA5;
+    --cc-purple-bg:#26215C; --cc-purple-fg:#AFA9EC;
+    --cc-gray-bg:#2C2C2A; --cc-gray-fg:#B4B2A9;
+    --cc-coral-bg:#4A1B0C; --cc-coral-fg:#F0997B;
   }
   *{box-sizing:border-box;}
   html,body{overflow-x:hidden;max-width:100%;}
@@ -184,6 +200,17 @@
   .icon-grid button{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .icon-grid button.selected{background:var(--ink);border-color:var(--ink);}
   .icon-grid-empty{grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:.78rem;padding:1.2rem .5rem;line-height:1.5;}
+  .color-swatches{display:flex;flex-wrap:wrap;gap:.55rem;}
+  .color-swatch{width:34px;height:34px;border-radius:50%;border:2px solid transparent;font-size:.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+  .color-swatch.selected{border-color:var(--ink);}
+  .inline-search-row{display:flex;gap:.5rem;margin-bottom:1rem;}
+  .inline-search-box{flex:1;display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.55rem .8rem;min-width:0;}
+  .inline-search-box .ico{color:var(--ink-soft);font-size:.85rem;flex-shrink:0;}
+  .inline-search-box input{border:none;background:none;padding:0;flex:1;min-width:0;color:var(--ink);font-size:.85rem;font-family:'Inter';}
+  .inline-search-box input::placeholder{color:var(--ink-soft);}
+  .filter-btn{position:relative;width:40px;height:40px;flex-shrink:0;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:.9rem;cursor:pointer;}
+  .filter-btn.active{color:var(--ink);border-color:var(--ink-soft);}
+  .filter-btn.active::after{content:'';position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--despesa);}
   #icon-custom-input{font-size:.82rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #icon-custom-input::placeholder{font-size:.82rem;color:var(--ink-soft);}
   #icon-custom-input::-webkit-input-placeholder{font-size:.82rem;color:var(--ink-soft);}
@@ -411,17 +438,22 @@
   </div>
 
   <div id="tab-lancamentos" class="tab-page">
-    <button id="toggle-search" style="width:100%;text-align:left;padding:.6rem .8rem;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:.82rem;cursor:pointer;margin-bottom:1rem;">⌕ Buscar lançamento...</button>
+    <div class="inline-search-row">
+      <div class="inline-search-box">
+        <span class="ico" aria-hidden="true">⌕</span>
+        <input id="s-texto" type="text" placeholder="Buscar por descrição...">
+      </div>
+      <button type="button" id="toggle-search" class="filter-btn" aria-label="Filtros">☰</button>
+    </div>
 
     <div class="section-title" style="margin-top:.2rem;"><span id="lanc-title">Últimos lançamentos</span> <span class="count" id="lanc-count"></span></div>
     <div id="recent-container"></div>
 
     <div class="panel" id="search-panel">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
-        <h2 style="margin:0;">Buscar</h2>
+        <h2 style="margin:0;">Filtros</h2>
         <button id="close-search" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
       </div>
-      <input id="s-texto" type="text" placeholder="Descrição...">
       <div class="row2">
         <div><label>Categoria</label><button type="button" class="field-btn" id="s-categoria" data-value="">Todas</button></div>
         <div><label>Conta</label><button type="button" class="field-btn" id="s-conta" data-value="">Todas</button></div>
@@ -479,7 +511,11 @@
 
     <div class="section-title">Contas / formas de pagamento</div>
     <div class="chip-row" id="acc-chips"></div>
-    <div class="add-chip-row"><input id="new-acc" placeholder="Nome da conta"><button id="add-acc">+</button></div>
+    <div class="add-chip-row">
+      <button type="button" class="icon-pick-btn" id="new-acc-icon" data-icon="💳" data-auto="1">💳</button>
+      <input id="new-acc" placeholder="Nome da conta">
+      <button id="add-acc">+</button>
+    </div>
     <label>Tipo da nova conta</label>
     <select id="new-acc-kind">
       <option value="dinheiro">Dinheiro</option>
@@ -583,11 +619,28 @@
     </div>
     <label>Ícone</label>
     <button type="button" class="icon-pick-btn" id="cat-edit-icon" style="width:52px;height:52px;font-size:1.6rem;">✳</button>
+    <label>Cor</label>
+    <div class="color-swatches" id="cat-edit-colors"></div>
     <label>Nome</label>
     <input id="cat-edit-name" placeholder="Nome da categoria">
     <div class="save-row">
       <button class="btn-cancel" id="cat-edit-delete" style="color:var(--despesa);">Excluir</button>
       <button class="btn-save" id="cat-edit-save">Salvar</button>
+    </div>
+  </div>
+
+  <div class="panel" id="acc-edit-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
+      <h2 style="margin:0;">Editar conta</h2>
+      <button id="acc-edit-close" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
+    </div>
+    <label>Ícone</label>
+    <button type="button" class="icon-pick-btn" id="acc-edit-icon" style="width:52px;height:52px;font-size:1.6rem;">💳</button>
+    <label>Nome</label>
+    <input id="acc-edit-name" placeholder="Nome da conta">
+    <div class="save-row">
+      <button class="btn-cancel" id="acc-edit-delete" style="color:var(--despesa);">Excluir</button>
+      <button class="btn-save" id="acc-edit-save">Salvar</button>
     </div>
   </div>
 
@@ -1158,7 +1211,7 @@ function renderSettingsPanel(){
   $('cat-chips').innerHTML = categories.map(c =>
     `<span class="chip"><button type="button" class="chip-main" onclick="openCatEdit('${c.id}')">${c.icon||'✳'} ${escapeHtml(c.name)}</button><button onclick="deleteCategory('${c.id}')">×</button></span>`
   ).join('');
-  $('acc-chips').innerHTML = accounts.map(a => `<span class="chip">${a.icon||'💳'} ${escapeHtml(a.name)}<button onclick="deleteAccount('${a.id}')">×</button></span>`).join('');
+  $('acc-chips').innerHTML = accounts.map(a => `<span class="chip"><button type="button" class="chip-main" onclick="openAccEdit('${a.id}')">${a.icon||'💳'} ${escapeHtml(a.name)}</button><button onclick="deleteAccount('${a.id}')">×</button></span>`).join('');
   $('pin-status').textContent = settings.pinHash ? 'PIN ativado.' : 'Nenhum PIN definido.';
   $('closing-day').value = settings.closingDay || 30;
   $('closing-day-status').textContent = '';
@@ -1181,8 +1234,9 @@ $('add-cat').addEventListener('click', async () => {
   const name = $('new-cat').value.trim();
   if(!name) return;
   const icon = $('new-cat-icon').dataset.icon || '✳';
+  const color = CAT_COLORS[categories.length % CAT_COLORS.length];
   const ref = col('categories').doc();
-  const data = {name, icon};
+  const data = {name, icon, color};
   await ref.set(data);
   categories.push({id: ref.id, ...data});
   $('new-cat').value = '';
@@ -1194,16 +1248,83 @@ $('add-acc').addEventListener('click', async () => {
   const name = $('new-acc').value.trim();
   const kind = $('new-acc-kind').value;
   if(!name) return;
+  const icon = $('new-acc-icon').dataset.icon || ACC_ICONS[kind] || '💳';
   const ref = col('accounts').doc();
-  const data = {name, kind, icon:ACC_ICONS[kind]||'💳'};
+  const data = {name, kind, icon};
   await ref.set(data);
   accounts.push({id: ref.id, ...data});
   $('new-acc').value = '';
+  $('new-acc-icon').dataset.icon = ACC_ICONS[kind] || '💳';
+  $('new-acc-icon').dataset.auto = '1';
+  $('new-acc-icon').textContent = ACC_ICONS[kind] || '💳';
   populateSelects(); renderSettingsPanel(); render();
+});
+$('new-acc-icon').addEventListener('click', () => {
+  openIconPicker($('new-acc-icon').dataset.icon, icon => {
+    $('new-acc-icon').dataset.icon = icon;
+    $('new-acc-icon').dataset.auto = '0';
+    $('new-acc-icon').textContent = icon;
+  });
+});
+$('new-acc-kind').addEventListener('change', () => {
+  // só atualiza o ícone sugerido automaticamente se o usuário ainda não escolheu um na grade
+  if($('new-acc-icon').dataset.auto === '1'){
+    const icon = ACC_ICONS[$('new-acc-kind').value] || '💳';
+    $('new-acc-icon').dataset.icon = icon;
+    $('new-acc-icon').textContent = icon;
+  }
+});
+
+// ---------- EDITAR CONTA (nome + ícone) ----------
+let accEditId = null;
+window.openAccEdit = id => {
+  const a = accounts.find(x => x.id === id);
+  if(!a) return;
+  accEditId = id;
+  $('acc-edit-icon').textContent = a.icon || '💳';
+  $('acc-edit-icon').dataset.icon = a.icon || '💳';
+  $('acc-edit-name').value = a.name;
+  openSheet('acc-edit-panel');
+};
+$('acc-edit-close').addEventListener('click', closeSheets);
+$('acc-edit-icon').addEventListener('click', () => {
+  openIconPicker($('acc-edit-icon').dataset.icon, icon => {
+    $('acc-edit-icon').dataset.icon = icon;
+    $('acc-edit-icon').textContent = icon;
+  });
+});
+$('acc-edit-save').addEventListener('click', async () => {
+  const name = $('acc-edit-name').value.trim();
+  if(!name || !accEditId) return;
+  const icon = $('acc-edit-icon').dataset.icon || '💳';
+  await col('accounts').doc(accEditId).update({name, icon});
+  const a = accounts.find(x => x.id === accEditId);
+  if(a){ a.name = name; a.icon = icon; }
+  closeSheets();
+  populateSelects(); renderSettingsPanel(); render();
+});
+$('acc-edit-delete').addEventListener('click', async () => {
+  if(!accEditId) return;
+  const id = accEditId;
+  closeSheets();
+  await deleteAccount(id);
 });
 
 // ---------- EDITAR CATEGORIA (nome + ícone) ----------
 let catEditId = null;
+const CAT_COLORS = ['despesa','amber','blue','green','pink','teal','purple','gray','coral'];
+function colorSwatchBg(key){ return key === 'despesa' ? 'var(--despesa-bg)' : `var(--cc-${key}-bg)`; }
+function colorSwatchFg(key){ return key === 'despesa' ? 'var(--despesa)' : `var(--cc-${key}-fg)`; }
+function buildColorSwatches(current){
+  const cur = current || 'despesa';
+  $('cat-edit-colors').innerHTML = CAT_COLORS.map(key =>
+    `<button type="button" class="color-swatch ${key === cur ? 'selected' : ''}" data-color="${key}" style="background:${colorSwatchBg(key)};color:${colorSwatchFg(key)};">${key === cur ? '✓' : ''}</button>`
+  ).join('');
+  $('cat-edit-colors').dataset.value = cur;
+  $('cat-edit-colors').querySelectorAll('.color-swatch').forEach(btn => {
+    btn.addEventListener('click', () => buildColorSwatches(btn.dataset.color));
+  });
+}
 window.openCatEdit = id => {
   const c = categories.find(x => x.id === id);
   if(!c) return;
@@ -1211,6 +1332,7 @@ window.openCatEdit = id => {
   $('cat-edit-icon').textContent = c.icon || '✳';
   $('cat-edit-icon').dataset.icon = c.icon || '✳';
   $('cat-edit-name').value = c.name;
+  buildColorSwatches(c.color);
   openSheet('cat-edit-panel');
 };
 $('cat-edit-close').addEventListener('click', closeSheets);
@@ -1224,9 +1346,10 @@ $('cat-edit-save').addEventListener('click', async () => {
   const name = $('cat-edit-name').value.trim();
   if(!name || !catEditId) return;
   const icon = $('cat-edit-icon').dataset.icon || '✳';
-  await col('categories').doc(catEditId).update({name, icon});
+  const color = $('cat-edit-colors').dataset.value || 'despesa';
+  await col('categories').doc(catEditId).update({name, icon, color});
   const c = categories.find(x => x.id === catEditId);
-  if(c){ c.name = name; c.icon = icon; }
+  if(c){ c.name = name; c.icon = icon; c.color = color; }
   closeSheets();
   populateSelects(); renderSettingsPanel(); render();
 });
@@ -1245,6 +1368,9 @@ window.deleteCategory = async id => {
   populateSelects(); renderSettingsPanel(); render();
 };
 window.deleteAccount = async id => {
+  const a = accounts.find(x => x.id === id);
+  const choice = await showConfirm('Excluir conta?', a ? `"${a.name}" será removida. Lançamentos que já usam essa conta não serão apagados.` : 'Essa ação não pode ser desfeita.');
+  if(choice !== 'ok') return;
   await col('accounts').doc(id).delete();
   accounts = accounts.filter(a => a.id !== id);
   populateSelects(); renderSettingsPanel(); render();
@@ -1467,8 +1593,15 @@ window.deleteTransaction = async (id) => {
 // ---------- SEARCH ----------
 $('toggle-search').addEventListener('click', () => openSheet('search-panel'));
 $('close-search').addEventListener('click', closeSheets);
+$('s-texto').addEventListener('input', () => {
+  activeFilters.texto = $('s-texto').value.trim().toLowerCase();
+  renderRecent();
+});
 $('s-apply').addEventListener('click', () => {
-  activeFilters = {texto: $('s-texto').value.trim().toLowerCase(), categoria: $('s-categoria').dataset.value, conta: $('s-conta').dataset.value, mes: $('s-mes').dataset.value, ano: $('s-ano').dataset.value};
+  activeFilters.categoria = $('s-categoria').dataset.value;
+  activeFilters.conta = $('s-conta').dataset.value;
+  activeFilters.mes = $('s-mes').dataset.value;
+  activeFilters.ano = $('s-ano').dataset.value;
   closeSheets();
   render();
 });
@@ -1479,6 +1612,7 @@ $('s-clear').addEventListener('click', () => {
   $('s-conta').dataset.value=''; $('s-conta').textContent='Todas';
   $('s-mes').dataset.value=''; $('s-mes').textContent='Todos';
   $('s-ano').dataset.value=''; $('s-ano').textContent='Todos';
+  closeSheets();
   render();
 });
 
@@ -1505,6 +1639,7 @@ $('export-btn').addEventListener('click', () => {
 // ---------- RENDER ----------
 function catName(id){ const c = categories.find(x=>x.id===id); return c ? c.name : 'Outros'; }
 function catIcon(id){ const c = categories.find(x=>x.id===id); return c ? (c.icon||'✳') : '✳'; }
+function catColorBg(id){ const c = categories.find(x=>x.id===id); return colorSwatchBg((c && c.color) || 'despesa'); }
 function accName(id){ const a = accounts.find(x=>x.id===id); return a ? a.name : '—'; }
 
 function effectiveMonthKey(t){
@@ -1760,7 +1895,7 @@ function ledgerRowHTML(t){
       </div>
       <div class="lr-drag-hint" aria-hidden="true"></div>
       <div class="ledger-row" data-id="${t.id}">
-        <div class="lr-cat">${catIcon(t.categoryId)}</div>
+        <div class="lr-cat" style="background:${catColorBg(t.categoryId)};">${catIcon(t.categoryId)}</div>
         <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
           <div class="lr-meta">${meta}</div></div>
         <div class="lr-val">${fmtBRL(t.valor)}</div>
@@ -1951,8 +2086,13 @@ function renderExtrato(){
 function hasActiveFilters(){
   return !!(activeFilters.texto || activeFilters.categoria || activeFilters.conta || activeFilters.mes || activeFilters.ano);
 }
+function updateFilterBtnIndicator(){
+  const hiddenActive = !!(activeFilters.categoria || activeFilters.conta || activeFilters.mes || activeFilters.ano);
+  $('toggle-search').classList.toggle('active', hiddenActive);
+}
 
 function renderRecent(){
+  updateFilterBtnIndicator();
   const c = $('recent-container');
   let list;
 
