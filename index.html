@@ -207,16 +207,17 @@
   .rank-row:first-child, .due-row:first-child{border-top-left-radius:13px;border-top-right-radius:13px;}
   .rank-row:last-child, .due-row:last-child{border-bottom-left-radius:13px;border-bottom-right-radius:13px;}
   .rank-pos{font-family:'Manrope';font-size:.75rem;color:var(--ink-soft);width:16px;}
-  .lr-swipe-wrap{position:relative;overflow:hidden;border-bottom:1px solid var(--line);}
+  .lr-swipe-wrap{overflow:hidden;border-bottom:1px solid var(--line);}
   .ledger .lr-swipe-wrap:last-child{border-bottom:none;}
   .ledger .lr-swipe-wrap:first-child{border-top-left-radius:13px;border-top-right-radius:13px;}
   .ledger .lr-swipe-wrap:last-child{border-bottom-left-radius:13px;border-bottom-right-radius:13px;}
+  .lr-swipe-inner{position:relative;overflow:hidden;}
   .lr-actions-behind{position:absolute;top:0;right:0;bottom:0;display:flex;pointer-events:none;}
-  .lr-swipe-wrap.actions-ready .lr-actions-behind{pointer-events:auto;}
+  .lr-swipe-inner.actions-ready .lr-actions-behind{pointer-events:auto;}
   .lr-actions-behind button{width:64px;border:none;color:var(--surface);font-size:.72rem;font-weight:600;cursor:pointer;touch-action:manipulation;}
   .lr-actions-behind .edit{background:var(--ink-soft);}
   .lr-actions-behind .del{background:var(--despesa);}
-  .ledger-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;position:relative;z-index:1;background:var(--surface);touch-action:pan-y;}
+  .ledger-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;position:relative;z-index:1;background:var(--surface);touch-action:pan-y;user-select:none;-webkit-user-select:none;}
   .lr-cat{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:var(--despesa-bg);}
   .lr-mid{flex:1;min-width:0;}
   .lr-desc{font-weight:500;font-size:.87rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
@@ -242,7 +243,7 @@
 
   .lr-drag-hint{position:absolute;top:0;right:0;bottom:0;width:6px;background:var(--despesa);opacity:.5;z-index:2;pointer-events:none;}
   .lr-swipe-wrap:has(.ledger-row[data-swiped="1"]) .lr-drag-hint{opacity:0;}
-  .lr-details{max-height:0;overflow:hidden;transition:max-height .25s ease;background:var(--surface-2);}
+  .lr-details{max-height:0;overflow:hidden;transition:max-height .25s ease;background:var(--surface-2);user-select:none;-webkit-user-select:none;}
   .lr-details.open{max-height:220px;}
   .lr-details-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .8rem;padding:.8rem 1rem 0;font-size:.74rem;color:var(--ink);}
   .lr-details-label{color:var(--ink-soft);font-size:.62rem;text-transform:uppercase;letter-spacing:.03em;margin-bottom:.1rem;}
@@ -1752,16 +1753,18 @@ function ledgerRowHTML(t){
   const recorrenteTxt = t.recurringId ? `Sim (${t.seq}/${t.total})` : 'Não';
   const pagaEmTxt = (acc && acc.kind === 'credito' && t.paymentDate) ? new Date(t.paymentDate+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : null;
   return `<div class="lr-swipe-wrap">
-    <div class="lr-actions-behind">
-      <button class="edit" onclick="closeAllSwipes();editTransaction('${t.id}')">Editar</button>
-      <button class="del" onclick="closeAllSwipes();deleteTransaction('${t.id}')">Excluir</button>
-    </div>
-    <div class="lr-drag-hint" aria-hidden="true"></div>
-    <div class="ledger-row" data-id="${t.id}">
-      <div class="lr-cat">${catIcon(t.categoryId)}</div>
-      <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
-        <div class="lr-meta">${meta}</div></div>
-      <div class="lr-val">${fmtBRL(t.valor)}</div>
+    <div class="lr-swipe-inner">
+      <div class="lr-actions-behind">
+        <button class="edit" onclick="closeAllSwipes();editTransaction('${t.id}')">Editar</button>
+        <button class="del" onclick="closeAllSwipes();deleteTransaction('${t.id}')">Excluir</button>
+      </div>
+      <div class="lr-drag-hint" aria-hidden="true"></div>
+      <div class="ledger-row" data-id="${t.id}">
+        <div class="lr-cat">${catIcon(t.categoryId)}</div>
+        <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
+          <div class="lr-meta">${meta}</div></div>
+        <div class="lr-val">${fmtBRL(t.valor)}</div>
+      </div>
     </div>
     <div class="lr-details" id="details-${t.id}">
       <div class="lr-details-grid">
