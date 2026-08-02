@@ -204,9 +204,11 @@
   .color-swatch{width:34px;height:34px;border-radius:50%;border:2px solid transparent;font-size:.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
   .color-swatch.selected{border-color:var(--ink);}
   .inline-search-row{display:flex;gap:.5rem;margin-bottom:1rem;}
-  .inline-search-box{flex:1;display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.55rem .8rem;min-width:0;}
+  .inline-search-box{flex:1;display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.55rem .8rem;min-width:0;transition:border-color .15s, box-shadow .15s;}
+  .inline-search-box:focus-within{border-color:var(--ink-soft);box-shadow:0 0 0 3px rgba(99,105,90,0.12);}
   .inline-search-box .ico{color:var(--ink-soft);font-size:.85rem;flex-shrink:0;}
-  .inline-search-box input{border:none;background:none;padding:0;flex:1;min-width:0;color:var(--ink);font-size:.85rem;font-family:'Inter';}
+  .inline-search-box input{border:none;background:none;padding:0;flex:1;min-width:0;color:var(--ink);font-size:.85rem;font-family:'Inter';text-align:left;}
+  .inline-search-box input:focus{outline:none;}
   .inline-search-box input::placeholder{color:var(--ink-soft);}
   .filter-btn{position:relative;width:40px;height:40px;flex-shrink:0;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:.9rem;cursor:pointer;}
   .filter-btn.active{color:var(--ink);border-color:var(--ink-soft);}
@@ -1877,7 +1879,8 @@ function renderEvolution(){
 
 function sortKey(t){ return t.createdAt || new Date(t.date+'T00:00:00').getTime(); }
 
-function ledgerRowHTML(t){
+function ledgerRowHTML(t, listKey){
+  listKey = listKey || 'recent';
   const dt = new Date(t.date+'T00:00:00');
   const dateStr = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
   const timeStr = t.createdAt ? new Date(t.createdAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : null;
@@ -1894,14 +1897,14 @@ function ledgerRowHTML(t){
         <button class="del" onclick="closeAllSwipes();deleteTransaction('${t.id}')">Excluir</button>
       </div>
       <div class="lr-drag-hint" aria-hidden="true"></div>
-      <div class="ledger-row" data-id="${t.id}">
+      <div class="ledger-row" data-id="${t.id}" data-list="${listKey}">
         <div class="lr-cat" style="background:${catColorBg(t.categoryId)};">${catIcon(t.categoryId)}</div>
         <div class="lr-mid"><div class="lr-desc">${escapeHtml(t.desc)}${badge}${recBadge}</div>
           <div class="lr-meta">${meta}</div></div>
         <div class="lr-val">${fmtBRL(t.valor)}</div>
       </div>
     </div>
-    <div class="lr-details" id="details-${t.id}">
+    <div class="lr-details" id="details-${listKey}-${t.id}">
       <div class="lr-details-grid">
         <div><div class="lr-details-label">Conta</div>${acc ? (acc.icon||'💳') + ' ' + escapeHtml(acc.name) : '—'}</div>
         <div><div class="lr-details-label">Recorrente</div>${recorrenteTxt}</div>
@@ -1916,7 +1919,7 @@ function ledgerRowHTML(t){
   </div>`;
 }
 window.toggleCardExpand = row => {
-  const detailsEl = document.getElementById('details-' + row.dataset.id);
+  const detailsEl = document.getElementById('details-' + row.dataset.list + '-' + row.dataset.id);
   if(!detailsEl) return;
   const willOpen = !detailsEl.classList.contains('open');
   // só um card expandido por vez
@@ -2077,7 +2080,7 @@ function renderExtrato(){
     const total = g.items.reduce((s,t)=>s+t.valor,0);
     return `<div class="extrato-day-group">
       <div class="extrato-day-header"><span>${labelCap}</span><span class="extrato-day-total">${fmtBRL(total)}</span></div>
-      <div class="ledger">${g.items.map(ledgerRowHTML).join('')}</div>
+      <div class="ledger">${g.items.map(t => ledgerRowHTML(t, 'extrato')).join('')}</div>
     </div>`;
   }).join('');
   initSwipeRows("#extrato-list");
@@ -2119,7 +2122,7 @@ function renderRecent(){
   }
 
   if(list.length===0){ c.innerHTML = '<div class="empty-state">Nenhum lançamento encontrado.</div>'; return; }
-  c.innerHTML = '<div class="ledger">' + list.map(ledgerRowHTML).join('') + '</div>';
+  c.innerHTML = '<div class="ledger">' + list.map(t => ledgerRowHTML(t, 'recent')).join('') + '</div>';
   initSwipeRows();
 }
 
