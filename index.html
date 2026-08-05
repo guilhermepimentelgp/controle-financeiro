@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#23281E">
+<meta name="theme-color" content="#0063DE">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Financeiro">
@@ -20,11 +20,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   :root{
-    --bg:#EAE4D3; --surface:#F7F3E7; --surface-2:#F1EBDB;
-    --ink:#23281E; --ink-soft:#63695A; --line:#D6CDB0;
-    --despesa:#A3432B; --despesa-bg:#F3E1D9;
+    --bg:#F6F6F7; --surface:#FFFFFF; --surface-2:#F1F3F5;
+    --ink:#40444D; --ink-soft:#666E7A; --line:#DEE2E6;
+    --brand:#0063DE; --brand-bg:#E3EEFC;
+    --despesa:#FA7C4A; --despesa-bg:#FDEBE0;
     --pendente:#A3771F; --pendente-bg:#F1E4C9;
-    --accent:#2F6B4C; --accent-bg:#E1EAE1;
+    --accent:#008750; --accent-bg:#DFF3E8;
     --cc-amber-bg:#FAEEDA; --cc-amber-fg:#854F0B;
     --cc-blue-bg:#E6F1FB; --cc-blue-fg:#0C447C;
     --cc-green-bg:#EAF3DE; --cc-green-fg:#27500A;
@@ -35,11 +36,12 @@
     --cc-coral-bg:#FAECE7; --cc-coral-fg:#712B13;
   }
   [data-theme="dark"]{
-    --bg:#1B1D17; --surface:#252822; --surface-2:#2E3128;
-    --ink:#EDE9DC; --ink-soft:#A5A995; --line:#3B3F34;
-    --despesa:#E28468; --despesa-bg:#3A2B24;
+    --bg:#14171C; --surface:#1E222A; --surface-2:#262B34;
+    --ink:#E7E9EC; --ink-soft:#8B93A0; --line:#333944;
+    --brand:#4C8DF0; --brand-bg:#1B2D4A;
+    --despesa:#FF9466; --despesa-bg:#3D2417;
     --pendente:#E0B454; --pendente-bg:#3A331F;
-    --accent:#6FBE94; --accent-bg:#233024;
+    --accent:#4FCB8D; --accent-bg:#163826;
     --cc-amber-bg:#412402; --cc-amber-fg:#FAC775;
     --cc-blue-bg:#042C53; --cc-blue-fg:#85B7EB;
     --cc-green-bg:#173404; --cc-green-fg:#97C459;
@@ -68,7 +70,7 @@
     color:var(--ink-soft);font-family:'Inter';font-size:.62rem;
   }
   .nav-btn .nav-ico{font-size:1.1rem;line-height:1;}
-  .nav-btn.active{color:var(--accent);font-weight:600;}
+  .nav-btn.active{color:var(--brand);font-weight:600;}
   .hidden{display:none !important;}
 
   @keyframes skelPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
@@ -101,7 +103,7 @@
   .hero-track-wrap{overflow:hidden;border-radius:14px;touch-action:pan-y;}
   .hero-track{display:flex;width:200%;touch-action:pan-y;user-select:none;}
   .hero-page{width:50%;box-sizing:border-box;display:flex;}
-  .hero-card{background:var(--surface);border-radius:14px;padding:1.4rem 1.3rem 1.2rem 1.2rem;border-left:3px solid var(--despesa);flex:1;display:flex;flex-direction:column;justify-content:space-between;}
+  .hero-card{background:var(--surface);border-radius:14px;padding:1.4rem 1.3rem 1.2rem 1.2rem;border-left:3px solid var(--brand);flex:1;display:flex;flex-direction:column;justify-content:space-between;}
   .hero-card.fatura{border-left-color:var(--ink-soft);}
   .hero-dots{display:flex;justify-content:center;gap:5px;margin-top:.8rem;}
   .hero-dots span{height:5px;border-radius:3px;background:var(--line);}
@@ -111,7 +113,7 @@
   .month-nav button{background:var(--surface-2);border:none;border-radius:6px;width:22px;height:22px;flex-shrink:0;color:var(--ink);cursor:pointer;font-size:.75rem;padding:0;}
   .month-label{font-family:'Manrope',sans-serif;font-size:.78rem;font-weight:600;text-align:center;text-transform:capitalize;white-space:nowrap;color:var(--ink);}
   .saldo-label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.15rem;}
-  .saldo-valor{font-family:'Manrope',sans-serif;font-size:clamp(1.6rem,8vw,2.1rem);font-weight:700;letter-spacing:-.01em;line-height:1;color:var(--despesa);}
+  .saldo-valor{font-family:'Manrope',sans-serif;font-size:clamp(1.6rem,8vw,2.1rem);font-weight:700;letter-spacing:-.01em;line-height:1;color:var(--brand);}
   @media (max-width:360px){
     .month-label{font-size:.7rem;}
     .hero-card{padding:1.1rem 1rem 1rem .95rem;}
@@ -215,7 +217,7 @@
   .inline-search-box input::-moz-placeholder{color:var(--ink-soft);font-size:.85rem;font-family:'Inter';opacity:1;}
   .filter-btn{position:relative;width:40px;height:40px;flex-shrink:0;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:.9rem;cursor:pointer;}
   .filter-btn.active{color:var(--ink);border-color:var(--ink-soft);}
-  .filter-btn.active::after{content:'';position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--despesa);}
+  .filter-btn.active::after{content:'';position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--brand);}
   #icon-custom-input{font-size:.82rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #icon-custom-input::placeholder{font-size:.82rem;color:var(--ink-soft);}
   #icon-custom-input::-webkit-input-placeholder{font-size:.82rem;color:var(--ink-soft);}
@@ -250,11 +252,11 @@
   .lr-actions-behind .edit{background:var(--ink-soft);}
   .lr-actions-behind .del{background:var(--despesa);}
   .ledger-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;padding:.7rem 1rem;position:relative;z-index:1;background:var(--surface);touch-action:pan-y;user-select:none;-webkit-user-select:none;}
-  .lr-cat{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:var(--despesa-bg);}
+  .lr-cat{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:var(--brand-bg);}
   .lr-mid{flex:1;min-width:0;}
   .lr-desc{font-weight:500;font-size:.87rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .lr-meta{font-size:.7rem;color:var(--ink-soft);margin-top:.1rem;}
-  .lr-val{font-family:'Manrope',sans-serif;font-weight:500;font-size:.9rem;text-align:right;flex-shrink:0;color:var(--despesa);}
+  .lr-val{font-family:'Manrope',sans-serif;font-weight:500;font-size:.9rem;text-align:right;flex-shrink:0;color:var(--brand);}
   .lr-actions{display:flex;gap:2px;flex-shrink:0;}
   .lr-actions button{background:none;border:none;color:var(--ink-soft);font-size:.95rem;cursor:pointer;padding:.2rem .35rem;}
   .badge{font-size:.6rem;padding:1px 6px;border-radius:5px;margin-left:.3rem;}
@@ -273,7 +275,7 @@
   .fatura-invoice-detail .fid-row{display:flex;justify-content:space-between;font-size:.78rem;color:var(--ink-soft);padding:.3rem 0;}
   .badge-aberta{font-size:.6rem;color:var(--pendente);background:var(--pendente-bg);padding:1px 6px;border-radius:5px;margin-left:.4rem;}
 
-  .lr-drag-hint{position:absolute;top:0;right:0;bottom:0;width:6px;background:var(--despesa);opacity:.5;z-index:2;pointer-events:none;}
+  .lr-drag-hint{position:absolute;top:0;right:0;bottom:0;width:6px;background:var(--brand);opacity:.5;z-index:2;pointer-events:none;}
   .lr-swipe-wrap:has(.ledger-row[data-swiped="1"]) .lr-drag-hint{opacity:0;}
   .lr-details{max-height:0;overflow:hidden;transition:max-height .25s ease;background:var(--surface-2);user-select:none;-webkit-user-select:none;}
   .lr-details.open{max-height:220px;}
@@ -717,7 +719,7 @@ const DEFAULT_ACCOUNTS = [
   {name:'Ticket', kind:'ticket'}
 ];
 const ACC_ICONS = {dinheiro:'💵', pix:'📱', debito:'💳', credito:'💳', ticket:'🍽'};
-const CHART_COLORS = ['#A3432B','#B98A2E','#2F6B4C','#5B7FA6','#8C6A9C','#63695A','#C77B54','#4F8C7A','#9C6B4A'];
+const CHART_COLORS = ['#0063DE','#FA7C4A','#008750','#6F42C1','#17A2B8','#666E7A','#B98A2E','#E83E8C','#20C997'];
 
 let uid = null;
 let categories = [];
@@ -1318,8 +1320,8 @@ $('acc-edit-delete').addEventListener('click', async () => {
 // ---------- EDITAR CATEGORIA (nome + ícone) ----------
 let catEditId = null;
 const CAT_COLORS = ['despesa','amber','blue','green','pink','teal','purple','gray','coral'];
-function colorSwatchBg(key){ return key === 'despesa' ? 'var(--despesa-bg)' : `var(--cc-${key}-bg)`; }
-function colorSwatchFg(key){ return key === 'despesa' ? 'var(--despesa)' : `var(--cc-${key}-fg)`; }
+function colorSwatchBg(key){ return key === 'despesa' ? 'var(--brand-bg)' : `var(--cc-${key}-bg)`; }
+function colorSwatchFg(key){ return key === 'despesa' ? 'var(--brand)' : `var(--cc-${key}-fg)`; }
 function buildColorSwatches(current){
   const cur = current || 'despesa';
   $('cat-edit-colors').innerHTML = CAT_COLORS.map(key =>
@@ -1874,7 +1876,7 @@ function renderEvolution(){
   }
   chartEvol = new Chart($('chart-evol'), {
     type:'bar',
-    data:{labels, datasets:[{data:values, backgroundColor:'#A3432B', borderRadius:4, maxBarThickness:28}]},
+    data:{labels, datasets:[{data:values, backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--brand'), borderRadius:4, maxBarThickness:28}]},
     options:{responsive:true, maintainAspectRatio:false, animation:{duration:400}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>fmtBRL(ctx.raw)}}},
       scales:{y:{ticks:{callback:v=>fmtBRL(v)}, grid:{color:'#00000010'}}, x:{grid:{display:false}}}}
   });
