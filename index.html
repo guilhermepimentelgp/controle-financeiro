@@ -26,6 +26,7 @@
     --despesa:#FA7C4A; --despesa-bg:#FDEBE0;
     --pendente:#A3771F; --pendente-bg:#F1E4C9;
     --accent:#008750; --accent-bg:#DFF3E8;
+    --btn-primary-bg:#17181A; --btn-primary-fg:#F6F6F7;
     --cc-amber-bg:#FAEEDA; --cc-amber-fg:#854F0B;
     --cc-blue-bg:#E6F1FB; --cc-blue-fg:#0C447C;
     --cc-green-bg:#EAF3DE; --cc-green-fg:#27500A;
@@ -42,6 +43,7 @@
     --despesa:#FF9466; --despesa-bg:#3D2417;
     --pendente:#E0B454; --pendente-bg:#3A331F;
     --accent:#4FCB8D; --accent-bg:#163826;
+    --btn-primary-bg:#E7E9EC; --btn-primary-fg:#14171C;
     --cc-amber-bg:#412402; --cc-amber-fg:#FAC775;
     --cc-blue-bg:#042C53; --cc-blue-fg:#85B7EB;
     --cc-green-bg:#173404; --cc-green-fg:#97C459;
@@ -100,15 +102,24 @@
   #sync-status{font-size:.65rem;color:var(--ink-soft);}
 
   .hero{margin-bottom:1rem;}
+  .hero-tabs{display:flex;background:var(--surface-2);border-radius:11px;padding:3px;margin-bottom:.7rem;}
+  .hero-tabs .hero-tab{flex:1;text-align:center;border:none;background:none;border-radius:9px;padding:.42rem 0;font-family:'Manrope',sans-serif;font-size:.72rem;font-weight:600;color:var(--ink-soft);cursor:pointer;touch-action:manipulation;}
+  .hero-tabs .hero-tab.active{background:var(--surface);color:var(--brand);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08);}
   .hero-track-wrap{overflow:hidden;border-radius:14px;touch-action:pan-y;}
   .hero-track{display:flex;width:200%;touch-action:pan-y;user-select:none;}
   .hero-page{width:50%;box-sizing:border-box;display:flex;}
   .hero-card{background:var(--surface);border-radius:14px;padding:1.4rem 1.3rem 1.2rem 1.2rem;border-left:3px solid var(--brand);flex:1;display:flex;flex-direction:column;justify-content:space-between;}
   .hero-card.fatura{border-left-color:var(--ink-soft);}
-  .hero-dots{display:flex;justify-content:center;gap:5px;margin-top:.8rem;}
-  .hero-dots span{height:5px;border-radius:3px;background:var(--line);}
   .fatura-valor{font-family:'Manrope',sans-serif;font-size:clamp(1.6rem,8vw,2.1rem);font-weight:700;letter-spacing:-.01em;line-height:1;color:var(--ink);}
   .hero-top{margin-bottom:.9rem;}
+  .acc-type-title{font-size:.6rem;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin:.9rem 0 .4rem;}
+  .acc-type-row{display:flex;gap:.5rem;}
+  .acc-type-row + .acc-type-row{margin-top:.5rem;}
+  .acc-type-box{flex:1;min-width:0;background:var(--surface);border-radius:11px;padding:.55rem .6rem;}
+  .acc-type-box .l{font-size:.6rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .acc-type-box .v{font-family:'Manrope',sans-serif;font-size:.8rem;font-weight:700;color:var(--ink);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .brand-greeting{display:block;font-size:.68rem;font-weight:500;color:var(--ink-soft);}
+  .brand-question{display:block;font-size:1rem;font-weight:700;color:var(--ink);}
   .month-nav{display:flex;align-items:center;justify-content:center;gap:8px;}
   .month-nav button{background:var(--surface-2);border:none;border-radius:6px;width:22px;height:22px;flex-shrink:0;color:var(--ink);cursor:pointer;font-size:.75rem;padding:0;}
   .month-label{font-family:'Manrope',sans-serif;font-size:.78rem;font-weight:600;text-align:center;text-transform:capitalize;white-space:nowrap;color:var(--ink);}
@@ -130,7 +141,7 @@
   .mini-stat .v{font-family:'Manrope',sans-serif;font-size:.85rem;font-weight:500;margin-top:.1rem;}
 
   .actions-row{display:flex;gap:.6rem;margin-bottom:1rem;}
-  .add-btn{flex:1;padding:.85rem;border-radius:12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-family:'Inter';font-weight:500;font-size:.88rem;cursor:pointer;}
+  .add-btn{flex:1;padding:.85rem;border-radius:12px;border:1px solid var(--btn-primary-bg);background:var(--btn-primary-bg);color:var(--btn-primary-fg);font-family:'Inter';font-weight:500;font-size:.88rem;cursor:pointer;}
   .search-btn{width:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:1rem;cursor:pointer;}
 
   .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.32);z-index:85;display:none;}
@@ -395,7 +406,7 @@
   <div class="sheet-backdrop" id="sheet-backdrop"></div>
 
   <div class="brand">
-    <h1>Controle Financeiro</h1>
+    <h1 id="brand-title">Controle Financeiro</h1>
     <div class="brand-icons">
       <span id="sync-status">online</span>
       <button class="icon-btn" id="theme-toggle">◐</button>
@@ -404,6 +415,10 @@
 
   <div id="tab-inicio" class="tab-page active">
     <div class="hero">
+      <div class="hero-tabs" id="hero-tabs">
+        <button type="button" class="hero-tab active" id="hero-tab-0">Total do mês</button>
+        <button type="button" class="hero-tab" id="hero-tab-1">Fatura aberta</button>
+      </div>
       <div class="hero-track-wrap" id="hero-track-wrap">
         <div class="hero-track" id="hero-track">
           <div class="hero-page">
@@ -435,8 +450,8 @@
           </div>
         </div>
       </div>
-      <div class="hero-dots" id="hero-dots"><span id="dot0"></span><span id="dot1"></span></div>
-      <div class="mini-stats" id="mini-stats-contas"></div>
+      <div class="acc-type-title">Por tipo de conta</div>
+      <div id="acc-type-grid"></div>
     </div>
 
     <div class="actions-row">
@@ -719,6 +734,13 @@ const DEFAULT_ACCOUNTS = [
   {name:'Ticket', kind:'ticket'}
 ];
 const ACC_ICONS = {dinheiro:'💵', pix:'📱', debito:'💳', credito:'💳', ticket:'🍽'};
+const ACC_TYPES = [
+  {kind:'dinheiro', label:'Dinheiro', icon:'💵'},
+  {kind:'pix', label:'Pix', icon:'📱'},
+  {kind:'debito', label:'Débito', icon:'💳'},
+  {kind:'credito', label:'Crédito', icon:'💳'},
+  {kind:'ticket', label:'Ticket', icon:'🍽'},
+];
 const CHART_COLORS = ['#073B7A','#FA7C4A','#008750','#6F42C1','#17A2B8','#666E7A','#B98A2E','#E83E8C','#20C997'];
 
 let uid = null;
@@ -1132,15 +1154,24 @@ $('theme-toggle').addEventListener('click', async () => {
 });
 
 // ---------- ABAS ----------
+function updateBrandHeader(tabId){
+  if(tabId === 'tab-inicio'){
+    $('brand-title').innerHTML = '<span class="brand-greeting">Olá 👋</span><span class="brand-question">Como está indo o mês?</span>';
+  } else {
+    $('brand-title').textContent = 'Controle Financeiro';
+  }
+}
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     closeSheets();
     closeAllSwipes();
     document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b === btn));
+    updateBrandHeader(btn.dataset.tab);
     window.scrollTo({top:0, behavior:'instant'});
   });
 });
+updateBrandHeader('tab-inicio');
 
 // ---------- PAINEL DE FATURAS ----------
 $('open-fatura-panel').addEventListener('click', () => {
@@ -1149,24 +1180,28 @@ $('open-fatura-panel').addEventListener('click', () => {
 });
 $('close-fatura-panel').addEventListener('click', closeSheets);
 
-// ---------- CARROSSEL FATURA / TOTAL (arraste com mola) ----------
+// ---------- CARROSSEL FATURA / TOTAL (arraste com mola + abas clicáveis) ----------
 (function(){
   const wrap = $('hero-track-wrap');
   const track = $('hero-track');
-  const dot0 = $('dot0');
-  const dot1 = $('dot1');
+  const tab0 = $('hero-tab-0');
+  const tab1 = $('hero-tab-1');
   let page = 0, dragging = false, decided = false, startX = 0, startY = 0, baseX = 0, w = 0, pid = null;
 
-  function setDots(progress){
-    dot0.style.width = (16 - progress*11) + 'px';
-    dot0.style.background = progress < 0.5 ? 'var(--ink)' : 'var(--line)';
-    dot1.style.width = (5 + progress*11) + 'px';
-    dot1.style.background = progress >= 0.5 ? 'var(--ink)' : 'var(--line)';
+  function setActiveTab(progress){
+    const p = Math.round(Math.min(1, Math.max(0, progress)));
+    tab0.classList.toggle('active', p === 0);
+    tab1.classList.toggle('active', p === 1);
   }
   function setPos(px, animate){
     track.style.transition = animate ? 'transform .32s cubic-bezier(.22,1.36,.36,1)' : 'none';
     track.style.transform = 'translateX(' + px + 'px)';
-    setDots(Math.min(1, Math.max(0, -px / w)));
+    setActiveTab(-px / w);
+  }
+  function goToPage(p){
+    page = p;
+    w = wrap.getBoundingClientRect().width;
+    setPos(-page*w, true);
   }
   function onDown(e){
     w = wrap.getBoundingClientRect().width;
@@ -1203,13 +1238,15 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
     dragging = false; decided = false; pid = null;
   }
 
+  tab0.addEventListener('click', () => goToPage(0));
+  tab1.addEventListener('click', () => goToPage(1));
   track.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
   window.addEventListener('resize', () => { w = wrap.getBoundingClientRect().width; setPos(-page*w, false); });
 
-  setDots(0);
+  setActiveTab(0);
 })();
 
 // ---------- SETTINGS (aba Ajustes) ----------
@@ -1759,11 +1796,15 @@ function render(){
     $('cmp-mes').innerHTML = '';
   }
 
-  const byAcc = {};
-  cur.forEach(t => { byAcc[t.accountId] = (byAcc[t.accountId]||0)+t.valor; });
-  $('mini-stats-contas').innerHTML = accounts.filter(a=>byAcc[a.id]).map(a =>
-    `<div class="mini-stat"><div class="l">${a.icon||''} ${escapeHtml(a.name)}</div><div class="v">${fmtBRL(byAcc[a.id])}</div></div>`
-  ).join('') || '<div class="mini-stat"><div class="l">Sem gastos ainda</div><div class="v">&nbsp;</div></div>';
+  const byKind = {};
+  cur.forEach(t => {
+    const acc = accounts.find(a => a.id === t.accountId);
+    if(acc && acc.kind) byKind[acc.kind] = (byKind[acc.kind]||0) + t.valor;
+  });
+  const accTypeBox = t => `<div class="acc-type-box"><div class="l">${t.icon} ${t.label}</div><div class="v">${fmtBRL(byKind[t.kind]||0)}</div></div>`;
+  $('acc-type-grid').innerHTML =
+    `<div class="acc-type-row">${ACC_TYPES.slice(0,2).map(accTypeBox).join('')}</div>` +
+    `<div class="acc-type-row">${ACC_TYPES.slice(2,5).map(accTypeBox).join('')}</div>`;
 
   renderFatura();
   renderRanking();
