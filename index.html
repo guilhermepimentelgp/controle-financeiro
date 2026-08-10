@@ -1189,7 +1189,7 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
   let page = 0, dragging = false, decided = false, startX = 0, startY = 0, baseX = 0, w = 0, pid = null;
 
   function setActiveTab(progress){
-    const p = Math.round(Math.min(1, Math.max(0, progress)));
+    const p = Math.round(Math.min(1, Math.max(0, progress || 0)));
     tab0.classList.toggle('active', p === 0);
     tab1.classList.toggle('active', p === 1);
   }
@@ -1244,7 +1244,10 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
-  window.addEventListener('resize', () => { w = wrap.getBoundingClientRect().width; setPos(-page*w, false); });
+  window.addEventListener('resize', () => {
+    const neww = wrap.getBoundingClientRect().width;
+    if(neww){ w = neww; setPos(-page*w, false); }
+  });
 
   setActiveTab(0);
 })();
