@@ -426,7 +426,10 @@
               <div class="hero-top">
                 <div style="display:flex;align-items:center;justify-content:space-between;">
                   <div class="saldo-label">Total gasto no mês</div>
-                  <button id="open-extrato" style="background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;padding:0;">Ver extrato <span style="font-size:.8rem;">›</span></button>
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
+                    <button id="open-extrato" style="background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;padding:0;">Ver extrato <span style="font-size:.8rem;">›</span></button>
+                    <button type="button" id="toggle-hide-balance" style="background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.64rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px;padding:0;">🙈 Ocultar</button>
+                  </div>
                 </div>
                 <div class="saldo-valor" id="total-mes">R$ 0,00</div>
                 <div id="cmp-mes"></div>
@@ -1062,6 +1065,7 @@ async function loadSettings(){
   settings = doc.exists ? doc.data() : {theme:'light', pinHash:null};
   if(!settings.closingDay) settings.closingDay = 30;
   applyTheme();
+  updateHideBalanceBtn();
 }
 async function saveSettings(){
   await db.collection('users').doc(uid).collection('meta').doc('settings').set(settings);
@@ -1150,6 +1154,18 @@ function applyTheme(){ document.documentElement.setAttribute('data-theme', setti
 $('theme-toggle').addEventListener('click', async () => {
   settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
   applyTheme();
+  await saveSettings();
+});
+
+// ---------- OCULTAR SALDO ----------
+function displayBRL(v){ return settings.hideBalance ? 'R$ ••••••' : fmtBRL(v); }
+function updateHideBalanceBtn(){
+  $('toggle-hide-balance').innerHTML = settings.hideBalance ? '👁 Mostrar' : '🙈 Ocultar';
+}
+$('toggle-hide-balance').addEventListener('click', async () => {
+  settings.hideBalance = !settings.hideBalance;
+  updateHideBalanceBtn();
+  render();
   await saveSettings();
 });
 
@@ -1788,7 +1804,7 @@ function render(){
   const prev = monthTx(-1);
   const totalCur = cur.reduce((s,t)=>s+t.valor,0);
   const totalPrev = prev.reduce((s,t)=>s+t.valor,0);
-  $('total-mes').textContent = fmtBRL(totalCur);
+  $('total-mes').textContent = displayBRL(totalCur);
 
   if(totalPrev > 0){
     const diff = ((totalCur-totalPrev)/totalPrev)*100;
@@ -1804,7 +1820,7 @@ function render(){
     const acc = accounts.find(a => a.id === t.accountId);
     if(acc && acc.kind) byKind[acc.kind] = (byKind[acc.kind]||0) + t.valor;
   });
-  const accTypeBox = t => `<div class="acc-type-box"><div class="l">${t.icon} ${t.label}</div><div class="v">${fmtBRL(byKind[t.kind]||0)}</div></div>`;
+  const accTypeBox = t => `<div class="acc-type-box"><div class="l">${t.icon} ${t.label}</div><div class="v">${displayBRL(byKind[t.kind]||0)}</div></div>`;
   $('acc-type-grid').innerHTML =
     `<div class="acc-type-row">${ACC_TYPES.slice(0,2).map(accTypeBox).join('')}</div>` +
     `<div class="acc-type-row">${ACC_TYPES.slice(2,5).map(accTypeBox).join('')}</div>`;
