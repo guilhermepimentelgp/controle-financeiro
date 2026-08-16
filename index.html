@@ -424,14 +424,12 @@
           <div class="hero-page">
             <div class="hero-card total">
               <div class="hero-top">
-                <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:grid;grid-template-columns:1fr auto;align-items:center;row-gap:.1rem;column-gap:.5rem;">
                   <div class="saldo-label">Total gasto no mês</div>
-                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
-                    <button id="open-extrato" style="background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;padding:0;">Ver extrato <span style="font-size:.8rem;">›</span></button>
-                    <button type="button" id="toggle-hide-balance" aria-label="Ocultar valores" style="background:none;border:none;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:2px;"></button>
-                  </div>
+                  <button id="open-extrato" style="justify-self:center;background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;padding:0;">Ver extrato <span style="font-size:.8rem;">›</span></button>
+                  <div class="saldo-valor" id="total-mes">R$ 0,00</div>
+                  <button type="button" id="toggle-hide-balance" aria-label="Ocultar valores" style="justify-self:center;background:none;border:none;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:2px;"></button>
                 </div>
-                <div class="saldo-valor" id="total-mes">R$ 0,00</div>
                 <div id="cmp-mes"></div>
               </div>
               <div class="month-nav">
