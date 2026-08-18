@@ -134,7 +134,7 @@
   .cmp-badge{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:.3rem .6rem;font-size:.72rem;font-weight:600;}
   .cmp-badge.up{background:var(--despesa-bg);color:var(--despesa);}
   .cmp-badge.down{background:var(--accent-bg);color:var(--accent);}
-  #cmp-mes{margin-top:.5rem;}
+  #cmp-mes{margin-top:0;}
   .mini-stats{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.9rem;}
   .mini-stat{background:var(--surface-2);border-radius:9px;padding:.55rem .7rem;flex:1;min-width:90px;}
   .mini-stat .l{font-size:.65rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
@@ -428,9 +428,10 @@
                   <div class="saldo-label">Total gasto no mês</div>
                   <button id="open-extrato" style="justify-self:center;background:none;border:none;color:var(--ink-soft);font-family:'Manrope',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;padding:0;">Ver extrato <span style="font-size:.8rem;">›</span></button>
                   <div class="saldo-valor" id="total-mes">R$ 0,00</div>
+                  <div></div>
+                  <div id="cmp-mes" style="justify-self:start;"></div>
                   <button type="button" id="toggle-hide-balance" aria-label="Ocultar valores" style="justify-self:center;background:none;border:none;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:2px;"></button>
                 </div>
-                <div id="cmp-mes"></div>
               </div>
               <div class="month-nav">
                 <button id="prev-month">‹</button>
