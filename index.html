@@ -587,16 +587,13 @@
       <div><label>Conta</label><button type="button" class="field-btn" id="f-conta" data-value=""></button></div>
     </div>
     <div id="pagamento-wrap" style="display:none;">
-      <label>Dia de pagamento (opcional)</label>
+      <label>Dia de pagamento</label>
       <input id="f-pagamento" type="date">
     </div>
-    <div class="checkline" id="rec-wrap">
-      <input type="checkbox" id="f-rec-on">
-      <label style="margin:0;text-transform:none;font-size:.85rem;">Repetir todo mês por um número definido de meses</label>
-    </div>
-    <div id="rec-n-wrap" style="display:none;">
-      <label>Quantidade de meses</label>
-      <input id="f-rec-n" type="number" min="2" max="120" placeholder="Ex: 10">
+    <div id="parcelas-wrap" style="display:none;">
+      <label>Em quantas parcelas?</label>
+      <input id="f-parcelas" type="number" min="1" max="48" inputmode="numeric" value="1">
+      <div id="parcelas-preview" style="font-size:.72rem;color:var(--ink-soft);margin-top:.35rem;"></div>
     </div>
     <div class="save-row">
       <button class="btn-cancel" id="cancel-form">Cancelar</button>
@@ -1493,7 +1490,6 @@ $('toggle-form').addEventListener('click', () => {
   openSheet('form-panel');
 });
 $('cancel-form').addEventListener('click', () => { closeSheets(); clearForm(); });
-$('f-rec-on').addEventListener('change', e => { $('rec-n-wrap').style.display = e.target.checked ? 'block' : 'none'; });
 
 function todayStr(){ return localDateStr(); }
 function nowTimeStr(){ return new Date().toTimeString().slice(0,5); }
@@ -1505,8 +1501,24 @@ $('f-data').addEventListener('change', updateTimeFieldVisibility);
 
 function updatePagamentoVisibility(){
   const acc = accounts.find(a => a.id === $('f-conta').dataset.value);
-  $('pagamento-wrap').style.display = (acc && acc.kind === 'credito') ? 'block' : 'none';
+  const isCredito = !!(acc && acc.kind === 'credito');
+  $('pagamento-wrap').style.display = isCredito ? 'block' : 'none';
+  $('parcelas-wrap').style.display = isCredito ? 'block' : 'none';
+  if(!isCredito){
+    $('f-parcelas').value = '1';
+    $('parcelas-preview').textContent = '';
+  } else {
+    updateParcelasPreview();
+  }
 }
+function updateParcelasPreview(){
+  const valor = parseValorInput($('f-valor').value);
+  const n = Math.max(1, parseInt($('f-parcelas').value) || 1);
+  if(!valor || valor <= 0 || n <= 1){ $('parcelas-preview').textContent = ''; return; }
+  const base = Math.floor((valor / n) * 100) / 100;
+  $('parcelas-preview').textContent = `${n}x de ${fmtBRL(base)} (valor total dividido — a última parcela ajusta centavos)`;
+}
+$('f-parcelas').addEventListener('input', updateParcelasPreview);
 
 // ---------- CAMPO DE VALOR SEM VÍRGULA ----------
 function formatValorInput(el){
@@ -1523,13 +1535,14 @@ function parseValorInput(str){
   if(!str) return NaN;
   return parseFloat(str.replace(/\./g,'').replace(',', '.'));
 }
-$('f-valor').addEventListener('input', () => formatValorInput($('f-valor')));
+$('f-valor').addEventListener('input', () => { formatValorInput($('f-valor')); updateParcelasPreview(); });
 
 function clearForm(){
-  $('f-desc').value=''; $('f-valor').value=''; $('f-rec-n').value=''; setTimeValue(''); $('f-pagamento').value='';
-  $('f-rec-on').checked = false; $('rec-n-wrap').style.display='none';
+  $('f-desc').value=''; $('f-valor').value=''; setTimeValue(''); $('f-pagamento').value='';
+  $('f-parcelas').value = '1'; $('parcelas-preview').textContent = '';
   $('f-time-wrap').style.display = 'none';
   $('pagamento-wrap').style.display = 'none';
+  $('parcelas-wrap').style.display = 'none';
 }
 
 $('save-form').addEventListener('click', async () => {
@@ -1539,11 +1552,13 @@ $('save-form').addEventListener('click', async () => {
   const categoryId = $('f-categoria').dataset.value;
   const accountId = $('f-conta').dataset.value;
   const paymentDate = $('f-pagamento').value || null;
-  const recOn = $('f-rec-on').checked;
-  const recN = parseInt($('f-rec-n').value);
+  const acc = accounts.find(a => a.id === accountId);
+  const isCredito = !!(acc && acc.kind === 'credito');
+  const parcelas = isCredito ? Math.max(1, parseInt($('f-parcelas').value) || 1) : 1;
 
   if(!desc || !valor || valor <= 0 || !dataStr){ alert('Preencha descrição, valor e data.'); return; }
-  if(recOn && (!recN || recN < 2)){ alert('Informe quantos meses (mínimo 2).'); return; }
+  if(isCredito && !paymentDate){ alert('Informe o dia de pagamento — é obrigatório para compras no crédito.'); return; }
+  if(isCredito && (parcelas < 1 || parcelas > 48)){ alert('Informe um número de parcelas entre 1 e 48.'); return; }
 
   const btn = $('save-form');
   if(btn.disabled) return;
@@ -1562,19 +1577,28 @@ $('save-form').addEventListener('click', async () => {
       await col('transactions').doc(editingId).update(data);
       const idx = transactions.findIndex(t => t.id === editingId);
       if(idx > -1) transactions[idx] = {...transactions[idx], ...data};
-    } else if(recOn){
+    } else if(parcelas > 1){
       const recurringId = Date.now().toString(36);
       const nowTs = Date.now();
       const batch = db.batch();
       const newOnes = [];
-      for(let i=0;i<recN;i++){
+      const base = Math.floor((valor / parcelas) * 100) / 100;
+      const lastValor = Math.round((valor - base * (parcelas - 1)) * 100) / 100;
+      for(let i=0;i<parcelas;i++){
         const d = new Date(dataStr+'T00:00:00');
         d.setMonth(d.getMonth()+i);
         const ds = localDateStr(d);
+        let pd = null;
+        if(paymentDate){
+          const pdDate = new Date(paymentDate+'T00:00:00');
+          pdDate.setMonth(pdDate.getMonth()+i);
+          pd = localDateStr(pdDate);
+        }
+        const parcelaValor = (i === parcelas - 1) ? lastValor : base;
         const ref = col('transactions').doc();
         const data = {
-          desc, valor, categoryId, accountId, date:ds, paymentDate: i===0 ? paymentDate : null,
-          recurringId, seq:i+1, total:recN, createdAt: i===0 ? computeCreatedAt() : nowTs + i
+          desc, valor: parcelaValor, categoryId, accountId, date:ds, paymentDate: pd,
+          recurringId, seq:i+1, total:parcelas, createdAt: i===0 ? computeCreatedAt() : nowTs + i
         };
         batch.set(ref, data);
         newOnes.push({id: ref.id, ...data});
@@ -1612,7 +1636,7 @@ window.editTransaction = (id) => {
   $('f-categoria').innerHTML = editCat ? `<span class="picker-icon">${editCat.icon||'✳'}</span><span>${escapeHtml(editCat.name)}</span>` : '';
   $('f-conta').dataset.value = t.accountId;
   $('f-conta').innerHTML = editAcc ? `<span class="picker-icon">${editAcc.icon||'💳'}</span><span>${escapeHtml(editAcc.name)}</span>` : '';
-  $('rec-wrap').style.display = 'none';
+  $('f-parcelas').value = '1';
   setTimeValue(t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '');
   $('f-pagamento').value = t.paymentDate || '';
   updateTimeFieldVisibility();
