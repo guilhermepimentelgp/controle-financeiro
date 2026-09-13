@@ -1579,7 +1579,7 @@ $('save-form').addEventListener('click', async () => {
       if(idx > -1) transactions[idx] = {...transactions[idx], ...data};
     } else if(parcelas > 1){
       const recurringId = Date.now().toString(36);
-      const nowTs = Date.now();
+      const timeVal = $('f-time').value || nowTimeStr();
       const batch = db.batch();
       const newOnes = [];
       const base = Math.floor((valor / parcelas) * 100) / 100;
@@ -1598,7 +1598,7 @@ $('save-form').addEventListener('click', async () => {
         const ref = col('transactions').doc();
         const data = {
           desc, valor: parcelaValor, categoryId, accountId, date:ds, paymentDate: pd,
-          recurringId, seq:i+1, total:parcelas, createdAt: i===0 ? computeCreatedAt() : nowTs + i
+          recurringId, seq:i+1, total:parcelas, createdAt: new Date(ds + 'T' + timeVal + ':00').getTime()
         };
         batch.set(ref, data);
         newOnes.push({id: ref.id, ...data});
@@ -1969,11 +1969,22 @@ function renderEvolution(){
   });
 }
 
-function sortKey(t){ return t.createdAt || new Date(t.date+'T00:00:00').getTime(); }
+function displayDate(t){
+  const acc = accounts.find(a => a.id === t.accountId);
+  if(acc && acc.kind === 'credito' && t.paymentDate) return t.paymentDate;
+  return t.date;
+}
+function sortKey(t){
+  const dd = displayDate(t);
+  if(dd === t.date) return t.createdAt || new Date(t.date+'T00:00:00').getTime();
+  const timeStr = t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '12:00';
+  return new Date(dd + 'T' + timeStr + ':00').getTime();
+}
 
 function ledgerRowHTML(t, listKey){
   listKey = listKey || 'recent';
-  const dt = new Date(t.date+'T00:00:00');
+  const dd = displayDate(t);
+  const dt = new Date(dd+'T00:00:00');
   const dateStr = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
   const timeStr = t.createdAt ? new Date(t.createdAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : null;
   const meta = timeStr ? `${dateStr} · ${timeStr}` : `${dateStr} · ${escapeHtml(catName(t.categoryId))} · ${escapeHtml(accName(t.accountId))}`;
@@ -1981,7 +1992,7 @@ function ledgerRowHTML(t, listKey){
   const recBadge = t.recurringId ? `<span class="badge badge-rec">${t.seq}/${t.total}</span>` : '';
   const acc = accounts.find(a => a.id === t.accountId);
   const recorrenteTxt = t.recurringId ? `Sim (${t.seq}/${t.total})` : 'Não';
-  const pagaEmTxt = (acc && acc.kind === 'credito' && t.paymentDate) ? new Date(t.paymentDate+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : null;
+  const compradoEmTxt = (acc && acc.kind === 'credito' && dd !== t.date) ? new Date(t.date+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : null;
   return `<div class="lr-swipe-wrap">
     <div class="lr-swipe-inner">
       <div class="lr-actions-behind">
@@ -2001,7 +2012,7 @@ function ledgerRowHTML(t, listKey){
         <div><div class="lr-details-label">Conta</div>${acc ? (acc.icon||'💳') + ' ' + escapeHtml(acc.name) : '—'}</div>
         <div><div class="lr-details-label">Recorrente</div>${recorrenteTxt}</div>
         <div><div class="lr-details-label">Horário</div>${timeStr || '—'}</div>
-        ${pagaEmTxt ? `<div><div class="lr-details-label">Paga em</div>${pagaEmTxt}</div>` : ''}
+        ${compradoEmTxt ? `<div><div class="lr-details-label">Comprado em</div>${compradoEmTxt}</div>` : ''}
       </div>
       <div class="lr-details-actions">
         <button class="lr-detail-edit" onclick="editTransaction('${t.id}')">✏️ Editar</button>
@@ -2158,9 +2169,10 @@ function renderExtrato(){
   const groups = [];
   let lastDate = null;
   list.forEach(t => {
-    if(t.date !== lastDate){
-      groups.push({date: t.date, items: []});
-      lastDate = t.date;
+    const dd = displayDate(t);
+    if(dd !== lastDate){
+      groups.push({date: dd, items: []});
+      lastDate = dd;
     }
     groups[groups.length-1].items.push(t);
   });
