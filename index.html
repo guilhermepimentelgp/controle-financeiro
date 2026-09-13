@@ -2160,7 +2160,8 @@ $('close-extrato').addEventListener('click', () => $('extrato-screen').classList
 $('extrato-busca').addEventListener('input', e => { extratoBusca = e.target.value.trim().toLowerCase(); renderExtrato(); });
 
 function renderExtrato(){
-  let list = [...transactions].sort((a,b) => sortKey(b) - sortKey(a));
+  const today = localDateStr();
+  let list = [...transactions].filter(t => displayDate(t) <= today).sort((a,b) => sortKey(b) - sortKey(a));
   if(extratoBusca) list = list.filter(t => t.desc.toLowerCase().includes(extratoBusca));
   $('extrato-count').textContent = list.length + ' lançamento' + (list.length!==1?'s':'') + ' no total';
   const c = $('extrato-list');
