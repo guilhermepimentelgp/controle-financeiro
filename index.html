@@ -1676,6 +1676,7 @@ window.deleteTransaction = async (id) => {
     transactions = transactions.filter(x => x.id !== id);
   }
   render();
+  if($('fatura-panel').classList.contains('open')) renderFaturaList();
   vibrate(15);
   showToast('Lançamento excluído');
 };
@@ -1807,10 +1808,7 @@ function renderFaturaList(){
     const txs = grouped[k].sort((a,b)=>b.date.localeCompare(a.date));
     const total = txs.reduce((s,t)=>s+t.valor,0);
     const isOpen = k === todayKey;
-    const rows = txs.map(t => {
-      const dt = new Date(t.date+'T00:00:00');
-      return `<div class="fid-row"><span>${escapeHtml(t.desc)} · ${dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span><span>${fmtBRL(t.valor)}</span></div>`;
-    }).join('');
+    const rows = txs.map(t => ledgerRowHTML(t, 'fatura-'+k)).join('');
     return `<div class="fatura-invoice">
       <div class="fatura-invoice-head" onclick="toggleInvoice('${k}')">
         <span class="fi-label">${invoiceLabel(k)}${isOpen ? '<span class="badge-aberta">aberta</span>' : ''}</span>
@@ -1819,6 +1817,7 @@ function renderFaturaList(){
       <div class="fatura-invoice-detail" id="inv-${k}">${rows}</div>
     </div>`;
   }).join('');
+  initSwipeRows('#fatura-list');
 }
 window.toggleInvoice = (key) => {
   const el = document.getElementById('inv-'+key);
