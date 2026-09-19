@@ -1762,9 +1762,8 @@ function invoiceLabel(key){
   const [y,m] = key.split('-').map(Number);
   return new Date(y, m-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
 }
-function invoiceClosingDate(key, closingDay){
-  const [y,m] = key.split('-').map(Number);
-  return new Date(y, m-1, closingDay).toLocaleDateString('pt-BR', {day:'2-digit', month:'long'});
+function paymentMonthKey(t){
+  return displayDate(t).slice(0,7);
 }
 function creditoTransactions(){
   const creditoIds = new Set(accounts.filter(a => a.kind === 'credito').map(a => a.id));
@@ -1772,31 +1771,29 @@ function creditoTransactions(){
   return transactions.filter(t => creditoIds.has(t.accountId) && !(t.paymentDate && t.paymentDate <= today));
 }
 function renderFatura(){
-  const closingDay = settings.closingDay || 30;
   const creditoTx = creditoTransactions();
-  const todayKey = invoiceKeyFor(localDateStr(), closingDay);
 
   const grouped = {};
   creditoTx.forEach(t => {
-    const key = invoiceKeyFor(t.date, closingDay);
+    const key = paymentMonthKey(t);
     grouped[key] = (grouped[key]||0) + t.valor;
   });
+  const nextKey = Object.keys(grouped).sort()[0];
 
-  $('fatura-valor').textContent = fmtBRL(grouped[todayKey] || 0);
-  $('fatura-fecha').textContent = 'fecha em ' + invoiceClosingDate(todayKey, closingDay);
+  $('fatura-valor').textContent = fmtBRL(nextKey ? grouped[nextKey] : 0);
+  $('fatura-fecha').textContent = nextKey ? ('paga em ' + invoiceLabel(nextKey)) : 'sem faturas em aberto';
 }
 
 function renderFaturaList(){
-  const closingDay = settings.closingDay || 30;
   const creditoTx = creditoTransactions();
-  const todayKey = invoiceKeyFor(localDateStr(), closingDay);
 
   const grouped = {};
   creditoTx.forEach(t => {
-    const key = invoiceKeyFor(t.date, closingDay);
+    const key = paymentMonthKey(t);
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(t);
   });
+  const nextKey = Object.keys(grouped).sort()[0];
 
   const keys = Object.keys(grouped).sort().reverse();
   const listEl = $('fatura-list');
@@ -1805,9 +1802,9 @@ function renderFaturaList(){
     return;
   }
   listEl.innerHTML = keys.map(k => {
-    const txs = grouped[k].sort((a,b)=>b.date.localeCompare(a.date));
+    const txs = grouped[k].sort((a,b)=>displayDate(b).localeCompare(displayDate(a)));
     const total = txs.reduce((s,t)=>s+t.valor,0);
-    const isOpen = k === todayKey;
+    const isOpen = k === nextKey;
     const rows = txs.map(t => ledgerRowHTML(t, 'fatura-'+k)).join('');
     return `<div class="fatura-invoice">
       <div class="fatura-invoice-head" onclick="toggleInvoice('${k}')">
