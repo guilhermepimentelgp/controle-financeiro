@@ -103,8 +103,61 @@
 
   .hero{margin-bottom:1rem;}
   .hero-tabs{display:flex;background:var(--surface-2);border-radius:11px;padding:3px;margin-bottom:.7rem;}
-  .hero-tabs .hero-tab{flex:1;text-align:center;border:none;background:none;border-radius:9px;padding:.42rem 0;font-family:'Manrope',sans-serif;font-size:.72rem;font-weight:600;color:var(--ink-soft);cursor:pointer;touch-action:manipulation;}
+  .hero-tabs .hero-tab{flex:1;text-align:center;border:none;background:none;border-radius:9px;padding:.42rem 0;font-family:'Manrope',sans-serif;font-size:.72rem;font-weight:600;color:var(--ink-soft);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .1s ease,opacity .1s ease;}
+  .hero-tabs .hero-tab:active{transform:scale(.96);opacity:.65;}
   .hero-tabs .hero-tab.active{background:var(--surface);color:var(--brand);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+
+  /* ---- Toque sutil em todos os elementos clicáveis do app ----
+     Remove o flash azul padrão do navegador em qualquer toque, e substitui
+     por um leve encolhimento + queda de opacidade (sem introduzir nenhuma cor nova). */
+  *{-webkit-tap-highlight-color:transparent;}
+  button,
+  .nav-btn,
+  .icon-btn,
+  .add-btn,
+  .search-btn,
+  .filter-btn,
+  .btn-google,
+  .btn-cancel,
+  .btn-save,
+  .picker-item,
+  .chip-main,
+  .icon-pick-btn,
+  .color-swatch,
+  .auth-tab,
+  .fatura-invoice-head,
+  .mark-pago,
+  .confirm-btn,
+  .lr-detail-edit,
+  .lr-detail-del,
+  .lr-actions-behind .edit,
+  .lr-actions-behind .del{
+    transition:transform .1s ease,opacity .1s ease;
+  }
+  button:active,
+  .nav-btn:active,
+  .icon-btn:active,
+  .add-btn:active,
+  .search-btn:active,
+  .filter-btn:active,
+  .btn-google:active,
+  .btn-cancel:active,
+  .btn-save:active,
+  .picker-item:active,
+  .chip-main:active,
+  .icon-pick-btn:active,
+  .color-swatch:active,
+  .auth-tab:active,
+  .fatura-invoice-head:active,
+  .mark-pago:active,
+  .confirm-btn:active,
+  .lr-detail-edit:active,
+  .lr-detail-del:active,
+  .lr-actions-behind .edit:active,
+  .lr-actions-behind .del:active{
+    transform:scale(.96);
+    opacity:.65;
+  }
   .hero-track-wrap{overflow:hidden;border-radius:14px;touch-action:pan-y;}
   .hero-track{display:flex;width:200%;touch-action:pan-y;user-select:none;}
   .hero-page{width:50%;box-sizing:border-box;display:flex;}
