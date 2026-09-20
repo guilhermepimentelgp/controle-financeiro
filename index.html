@@ -236,6 +236,17 @@
   .time-wheel-frame::-webkit-scrollbar{display:none;}
   .time-wheel-frame .twi{height:44px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-family:'Manrope',sans-serif;font-size:1.05rem;font-weight:600;color:var(--ink-soft);opacity:.4;transition:opacity .15s,font-size .15s,color .15s;}
   .time-wheel-frame .twi.active{opacity:1;font-size:1.55rem;font-weight:700;color:var(--ink);}
+
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;}
+  .cal-nav button{border:none;background:var(--surface-2);width:28px;height:28px;border-radius:8px;color:var(--ink);font-size:.9rem;cursor:pointer;}
+  .cal-nav span{font-family:'Manrope',sans-serif;font-weight:700;font-size:.85rem;color:var(--ink);text-transform:capitalize;}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:.15rem;}
+  .cal-weekdays span{font-size:.62rem;color:var(--ink-soft);font-weight:600;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:.15rem;}
+  .cal-day{display:flex;align-items:center;justify-content:center;height:36px;}
+  .cal-day button{width:30px;height:30px;flex:0 0 30px;border-radius:50%;border:none;background:none;font-family:'Inter';font-size:.8rem;color:var(--ink);cursor:pointer;}
+  .cal-day button.today{font-weight:700;color:var(--brand);}
+  .cal-day button.selected{background:var(--brand);color:#fff;font-weight:700;}
   .time-colon{position:relative;z-index:1;font-family:'Manrope',sans-serif;font-size:1.55rem;font-weight:700;color:var(--ink);flex-shrink:0;}
   input:focus,select:focus{outline:1px solid var(--ink);}
   .row2{display:flex;gap:.6rem;}
@@ -628,7 +639,7 @@
     <input id="f-desc" type="text" placeholder="Ex: Mercado do mês">
     <div class="row2">
       <div><label>Valor (R$)</label><input id="f-valor" type="text" inputmode="numeric" placeholder="0,00"></div>
-      <div><label>Data</label><input id="f-data" type="date"></div>
+      <div><label>Data</label><button type="button" class="field-btn" id="f-data-btn"></button><input type="hidden" id="f-data"></div>
     </div>
     <div id="f-time-wrap" style="display:none;">
       <label>Horário do gasto</label>
@@ -641,7 +652,8 @@
     </div>
     <div id="pagamento-wrap" style="display:none;">
       <label>Dia de pagamento</label>
-      <input id="f-pagamento" type="date">
+      <button type="button" class="field-btn" id="f-pagamento-btn">Selecionar data</button>
+      <input type="hidden" id="f-pagamento">
     </div>
     <div id="parcelas-wrap" style="display:none;">
       <label>Em quantas parcelas?</label>
@@ -683,6 +695,23 @@
     </div>
     <div class="save-row">
       <button class="btn-save" id="time-confirm" style="width:100%;flex:1;">Confirmar</button>
+    </div>
+  </div>
+
+  <div class="panel" id="date-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+      <h2 id="date-panel-title" style="margin:0;">Data</h2>
+      <button id="date-close" aria-label="Fechar" style="background:var(--surface-2);border:none;border-radius:8px;width:26px;height:26px;font-size:.75rem;color:var(--ink);cursor:pointer;">✕</button>
+    </div>
+    <div class="cal-nav">
+      <button type="button" id="cal-prev" aria-label="Mês anterior">‹</button>
+      <span id="cal-month-label"></span>
+      <button type="button" id="cal-next" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="cal-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="save-row">
+      <button class="btn-save" id="date-confirm" style="width:100%;flex:1;">Confirmar</button>
     </div>
   </div>
 
@@ -932,6 +961,58 @@ $('time-confirm').addEventListener('click', () => {
   closeStackedOverlay('time-panel');
 });
 $('picker-close').addEventListener('click', closePickerOverlay);
+
+// ---------- SELETOR DE DATA (calendário customizado, substitui o <input type="date">) ----------
+let calViewDate = new Date();
+let calSelectedDate = null;
+let dateTargetField = null;
+
+function formatDateBtn(dateStr){
+  if(!dateStr) return 'Selecionar data';
+  const d = new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString('pt-BR', {day:'2-digit', month:'short', year:'numeric'}).replace(/\./g,'');
+}
+function renderCalendar(){
+  const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+  $('cal-month-label').textContent = calViewDate.toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const todayKey = localDateStr();
+  let html = '';
+  for(let i=0;i<firstDay;i++) html += '<div class="cal-day"></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const ds = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const cls = [];
+    if(ds === todayKey) cls.push('today');
+    if(ds === calSelectedDate) cls.push('selected');
+    html += `<div class="cal-day"><button type="button" class="${cls.join(' ')}" data-date="${ds}">${d}</button></div>`;
+  }
+  $('cal-grid').innerHTML = html;
+  $('cal-grid').querySelectorAll('button[data-date]').forEach(btn => {
+    btn.addEventListener('click', () => { calSelectedDate = btn.dataset.date; renderCalendar(); });
+  });
+}
+function openDatePicker(fieldId, title){
+  dateTargetField = fieldId;
+  $('date-panel-title').textContent = title;
+  const cur = $(fieldId).value || localDateStr();
+  calSelectedDate = $(fieldId).value || null;
+  calViewDate = new Date(cur+'T00:00:00');
+  renderCalendar();
+  openStackedOverlay('date-panel');
+}
+$('cal-prev').addEventListener('click', () => { calViewDate.setMonth(calViewDate.getMonth()-1); renderCalendar(); });
+$('cal-next').addEventListener('click', () => { calViewDate.setMonth(calViewDate.getMonth()+1); renderCalendar(); });
+$('date-close').addEventListener('click', () => closeStackedOverlay('date-panel'));
+$('date-confirm').addEventListener('click', () => {
+  if(!calSelectedDate) calSelectedDate = localDateStr();
+  $(dateTargetField).value = calSelectedDate;
+  $(dateTargetField+'-btn').textContent = formatDateBtn(calSelectedDate);
+  closeStackedOverlay('date-panel');
+  if(dateTargetField === 'f-data') updateTimeFieldVisibility();
+});
+$('f-data-btn').addEventListener('click', () => openDatePicker('f-data', 'Data da compra'));
+$('f-pagamento-btn').addEventListener('click', () => openDatePicker('f-pagamento', 'Dia de pagamento'));
 
 // ---------- SELETOR DE ÍCONE (grade de emojis, com busca por palavra-chave) ----------
 const ICON_CHOICES = [
@@ -1538,6 +1619,7 @@ $('toggle-form').addEventListener('click', () => {
   $('form-title').textContent = 'Novo gasto';
   clearForm();
   $('f-data').value = localDateStr();
+  $('f-data-btn').textContent = formatDateBtn(localDateStr());
   updateTimeFieldVisibility();
   updatePagamentoVisibility();
   openSheet('form-panel');
@@ -1592,6 +1674,7 @@ $('f-valor').addEventListener('input', () => { formatValorInput($('f-valor')); u
 
 function clearForm(){
   $('f-desc').value=''; $('f-valor').value=''; setTimeValue(''); $('f-pagamento').value='';
+  $('f-pagamento-btn').textContent = 'Selecionar data';
   $('f-parcelas').value = '1'; $('parcelas-preview').textContent = '';
   $('f-time-wrap').style.display = 'none';
   $('pagamento-wrap').style.display = 'none';
@@ -1683,6 +1766,7 @@ window.editTransaction = (id) => {
   editingId = id;
   $('form-title').textContent = 'Editar gasto';
   $('f-desc').value = t.desc; $('f-valor').value = t.valor.toFixed(2).replace('.',','); $('f-data').value = t.date;
+  $('f-data-btn').textContent = formatDateBtn(t.date);
   const editCat = categories.find(c => c.id === t.categoryId);
   const editAcc = accounts.find(a => a.id === t.accountId);
   $('f-categoria').dataset.value = t.categoryId;
@@ -1692,6 +1776,7 @@ window.editTransaction = (id) => {
   $('f-parcelas').value = '1';
   setTimeValue(t.createdAt ? new Date(t.createdAt).toTimeString().slice(0,5) : '');
   $('f-pagamento').value = t.paymentDate || '';
+  $('f-pagamento-btn').textContent = formatDateBtn(t.paymentDate || '');
   updateTimeFieldVisibility();
   updatePagamentoVisibility();
   openSheet('form-panel');
