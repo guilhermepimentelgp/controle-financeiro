@@ -1117,7 +1117,7 @@ const curMK = () => currentMonth.getFullYear()+'-'+String(currentMonth.getMonth(
 // ---------- AUTH ----------
 $('google-login').addEventListener('click', () => {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e => alert('Erro ao entrar: ' + e.message));
+  auth.signInWithPopup(provider).catch(e => showAlert('Erro ao entrar', e.message));
 });
 $('logout-btn').addEventListener('click', () => auth.signOut());
 
@@ -1415,7 +1415,7 @@ function renderSettingsPanel(){
 }
 $('save-closing-day').addEventListener('click', async () => {
   let day = parseInt($('closing-day').value);
-  if(!day || day < 1 || day > 31){ alert('Informe um dia entre 1 e 31.'); return; }
+  if(!day || day < 1 || day > 31){ await showAlert('Dia inválido', 'Informe um dia entre 1 e 31.'); return; }
   settings.closingDay = day;
   await saveSettings();
   $('closing-day-status').textContent = 'Salvo.';
@@ -1692,9 +1692,9 @@ $('save-form').addEventListener('click', async () => {
   const isCredito = !!(acc && acc.kind === 'credito');
   const parcelas = isCredito ? Math.max(1, parseInt($('f-parcelas').value) || 1) : 1;
 
-  if(!desc || !valor || valor <= 0 || !dataStr){ alert('Preencha descrição, valor e data.'); return; }
-  if(isCredito && !paymentDate){ alert('Informe o dia de pagamento — é obrigatório para compras no crédito.'); return; }
-  if(isCredito && (parcelas < 1 || parcelas > 48)){ alert('Informe um número de parcelas entre 1 e 48.'); return; }
+  if(!desc || !valor || valor <= 0 || !dataStr){ await showAlert('Campos incompletos', 'Preencha descrição, valor e data.'); return; }
+  if(isCredito && !paymentDate){ await showAlert('Dia de pagamento obrigatório', 'Informe o dia de pagamento — é obrigatório para compras no crédito.'); return; }
+  if(isCredito && (parcelas < 1 || parcelas > 48)){ await showAlert('Número de parcelas inválido', 'Informe um número de parcelas entre 1 e 48.'); return; }
 
   const btn = $('save-form');
   if(btn.disabled) return;
@@ -2282,6 +2282,11 @@ function showConfirm(title, desc, buttons){
     row.querySelectorAll('button').forEach(b => b.addEventListener('click', onClick));
     $('confirm-backdrop').addEventListener('click', onBackdrop);
   });
+}
+
+// ---------- ALERTA CUSTOMIZADO (substitui o alert() nativo) ----------
+function showAlert(title, desc){
+  return showConfirm(title, desc, [{key:'ok', label:'Entendi', cls:''}]);
 }
 
 // ---------- EXTRATO COMPLETO ----------
