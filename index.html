@@ -216,9 +216,10 @@
   .field-btn{
     width:100%;text-align:left;padding:.6rem .7rem;border-radius:8px;border:1px solid var(--line);
     background:var(--surface-2);color:var(--ink);font-family:'Inter';font-size:.9rem;cursor:pointer;
-    display:flex;align-items:center;justify-content:space-between;gap:6px;
+    display:flex;align-items:center;justify-content:space-between;gap:6px;white-space:nowrap;overflow:hidden;
   }
   .field-btn::after{content:'▾';font-size:.7rem;color:var(--ink-soft);flex-shrink:0;}
+  #f-data-btn,#f-pagamento-btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .pill-btn{
     border-radius:20px;font-family:'Manrope',sans-serif;font-weight:700;font-size:.76rem;
     border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);padding:.5rem 1rem;cursor:pointer;
@@ -970,7 +971,10 @@ let dateTargetField = null;
 function formatDateBtn(dateStr){
   if(!dateStr) return 'Selecionar data';
   const d = new Date(dateStr+'T00:00:00');
-  return d.toLocaleDateString('pt-BR', {day:'2-digit', month:'short', year:'numeric'}).replace(/\./g,'');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return dd+'/'+mm+'/'+yyyy;
 }
 function renderCalendar(){
   const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
