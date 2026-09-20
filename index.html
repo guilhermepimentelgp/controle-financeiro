@@ -2212,6 +2212,7 @@ function initSwipeRows(containerSelector){
     });
     function endDrag(e){
       if(e.pointerId !== pid) return;
+      const isCancel = e.type === 'pointercancel';
       if(dragging){
         const dx = e.clientX - startX;
         const shouldOpen = (baseX === 0 && dx < -30) || (baseX === maxReveal && dx < 30);
@@ -2231,9 +2232,11 @@ function initSwipeRows(containerSelector){
             if(row.dataset.swiped === '1') wrap.classList.add('actions-ready');
           }, 260);
         }
-      } else if(!decided){
+      } else if(!decided && !isCancel){
         // Toque simples, sem arrasto: se a gaveta já estiver aberta, um toque na
         // linha só fecha ela; caso contrário, alterna a expansão do card.
+        // (um pointercancel — o navegador assumindo o gesto pra rolar a página —
+        // nunca conta como toque simples, mesmo sem termos decidido a direção ainda)
         if(row.dataset.swiped === '1'){
           closeAllSwipes();
         } else {
