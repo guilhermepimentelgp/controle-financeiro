@@ -2353,8 +2353,13 @@ function renderRecent(){
   const c = $('recent-container');
   let list;
 
+  const naoCredito = t => {
+    const acc = accounts.find(a => a.id === t.accountId);
+    return !(acc && acc.kind === 'credito');
+  };
+
   if(hasActiveFilters()){
-    list = [...transactions];
+    list = [...transactions].filter(naoCredito);
     if(activeFilters.texto) list = list.filter(t => t.desc.toLowerCase().includes(activeFilters.texto));
     if(activeFilters.categoria) list = list.filter(t => t.categoryId === activeFilters.categoria);
     if(activeFilters.conta) list = list.filter(t => t.accountId === activeFilters.conta);
@@ -2370,7 +2375,7 @@ function renderRecent(){
     $('lanc-title').textContent = 'Resultados da busca';
     $('lanc-count').textContent = list.length ? list.length+' item'+(list.length!==1?'s':'') : '';
   } else {
-    list = [...transactions].sort((a,b) => sortKey(b) - sortKey(a)).slice(0,5);
+    list = [...transactions].filter(naoCredito).sort((a,b) => sortKey(b) - sortKey(a)).slice(0,5);
     $('lanc-title').textContent = 'Últimos lançamentos';
     $('lanc-count').textContent = '';
   }
