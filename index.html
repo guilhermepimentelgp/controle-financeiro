@@ -107,9 +107,7 @@
   .hero-tabs .hero-tab:active{transform:scale(.96);opacity:.65;}
   .hero-tabs .hero-tab.active{background:var(--surface);color:var(--brand);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08);}
 
-  /* ---- Toque sutil em todos os elementos clicáveis do app ----
-     Remove o flash azul padrão do navegador em qualquer toque, e substitui
-     por um leve encolhimento + queda de opacidade (sem introduzir nenhuma cor nova). */
+  /* ---- Toque sutil em todos os elementos clicáveis do app ---- */
   *{-webkit-tap-highlight-color:transparent;}
   button,
   .nav-btn,
@@ -842,10 +840,7 @@ let chartCat, chartConta, chartEvol;
 
 const $ = id => document.getElementById(id);
 
-// Painéis que EMPILHAM sobre outra caixa já aberta, em vez de fechá-la (ex: escolher
-// categoria durante o preenchimento do formulário de novo gasto, ou escolher um ícone
-// durante a edição de uma categoria). Guardamos uma pilha de verdade, porque esses
-// painéis podem se empilhar em mais de um nível (ex: ícone sobre editar categoria).
+// Painéis que EMPILHAM sobre outra caixa já aberta, em vez de fechá-la
 let overlayStack = [];
 function openSheet(id){
   document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open'));
@@ -858,9 +853,6 @@ function closeSheets(){
   overlayStack = [];
   $('sheet-backdrop').classList.remove('open');
 }
-// Fecha tudo, exceto quando algum seletor empilhado está aberto por cima de outra caixa:
-// nesse caso, um toque no fundo escurecido só fecha a camada mais no topo, mantendo o
-// resto aberto atrás.
 $('sheet-backdrop').addEventListener('click', () => {
   if(overlayStack.length){
     closeStackedOverlay(overlayStack[overlayStack.length - 1]);
@@ -869,9 +861,6 @@ $('sheet-backdrop').addEventListener('click', () => {
   }
 });
 
-// ---------- SELETOR CUSTOMIZADO (substitui o <select> nativo) ----------
-// Diferente de openSheet(), este NÃO fecha a caixa que já estiver aberta por trás —
-// ele empilha o seletor por cima dela, e closeStackedOverlay() remove só essa camada.
 function openStackedOverlay(id){
   $(id).classList.add('open');
   $('sheet-backdrop').classList.add('open');
@@ -881,7 +870,6 @@ function openStackedOverlay(id){
 function closeStackedOverlay(id){
   $(id).classList.remove('open');
   overlayStack = overlayStack.filter(x => x !== id);
-  // Se não sobrou nenhuma outra caixa aberta por trás, esconde o fundo escurecido também
   if(!document.querySelector('.panel.open')){
     $('sheet-backdrop').classList.remove('open');
   }
@@ -911,7 +899,6 @@ function openPicker(btnId, title, options, onSelect){
   openPickerOverlay();
 }
 
-// ---------- SELETOR DE HORA (rolagem, substitui o <input type="time"> nativo) ----------
 const TIME_ITEM_H = 44;
 function setTimeValue(hhmm){
   $('f-time').value = hhmm || '';
@@ -948,7 +935,6 @@ function openTimePicker(){
   buildTimeWheel('time-wheel-h', 23);
   buildTimeWheel('time-wheel-m', 59);
   openStackedOverlay('time-panel');
-  // Posiciona a rolagem sem animação, exatamente no valor atual
   requestAnimationFrame(() => {
     $('time-wheel-h').scrollTop = h * TIME_ITEM_H;
     $('time-wheel-m').scrollTop = m * TIME_ITEM_H;
@@ -966,7 +952,6 @@ $('time-confirm').addEventListener('click', () => {
 });
 $('picker-close').addEventListener('click', closePickerOverlay);
 
-// ---------- SELETOR DE DATA (calendário customizado, substitui o <input type="date">) ----------
 let calViewDate = new Date();
 let calSelectedDate = null;
 let dateTargetField = null;
@@ -1021,7 +1006,6 @@ $('date-confirm').addEventListener('click', () => {
 $('f-data-btn').addEventListener('click', () => openDatePicker('f-data', 'Data da compra'));
 $('f-pagamento-btn').addEventListener('click', () => openDatePicker('f-pagamento', 'Dia de pagamento'));
 
-// ---------- SELETOR DE ÍCONE (grade de emojis, com busca por palavra-chave) ----------
 const ICON_CHOICES = [
   {i:'✳', k:'outro geral padrão'},
   {i:'🍽', k:'alimentação comida restaurante prato refeição almoço jantar'},
@@ -1121,7 +1105,6 @@ function localDateStr(d){
 const mk = d => { const dt = new Date(d+'T00:00:00'); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); };
 const curMK = () => currentMonth.getFullYear()+'-'+String(currentMonth.getMonth()+1).padStart(2,'0');
 
-// ---------- AUTH ----------
 $('google-login').addEventListener('click', () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).catch(e => showAlert('Erro ao entrar', e.message));
@@ -1194,7 +1177,6 @@ auth.onAuthStateChanged(async user => {
   }
 });
 
-// ---------- FIRESTORE PATHS ----------
 const col = name => db.collection('users').doc(uid).collection(name);
 
 async function loadSettings(){
@@ -1232,7 +1214,6 @@ async function loadAll(){
   transactions = txSnap.docs.map(d => ({id:d.id, ...d.data()}));
 }
 
-// ---------- LOCK / PIN ----------
 function sha256(text){
   return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)).then(buf =>
     Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('')
@@ -1286,7 +1267,6 @@ function showApp(){
   render();
 }
 
-// ---------- THEME ----------
 function applyTheme(){ document.documentElement.setAttribute('data-theme', settings.theme || 'light'); }
 $('theme-toggle').addEventListener('click', async () => {
   settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
@@ -1294,7 +1274,6 @@ $('theme-toggle').addEventListener('click', async () => {
   await saveSettings();
 });
 
-// ---------- OCULTAR SALDO ----------
 function displayBRL(v){ return settings.hideBalance ? 'R$ ••••••' : fmtBRL(v); }
 const EYE_OPEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.62 21.62 0 0 1 5.06-6.06"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-2.61 3.94"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
@@ -1310,7 +1289,6 @@ $('toggle-hide-balance').addEventListener('click', async () => {
   await saveSettings();
 });
 
-// ---------- ABAS ----------
 function updateBrandHeader(tabId){
   if(tabId === 'tab-inicio'){
     $('brand-title').innerHTML = '<span class="brand-greeting">Olá 👋</span><span class="brand-question">Como está indo o mês?</span>';
@@ -1330,14 +1308,12 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 });
 updateBrandHeader('tab-inicio');
 
-// ---------- PAINEL DE FATURAS ----------
 $('open-fatura-panel').addEventListener('click', () => {
   renderFaturaList();
   openSheet('fatura-panel');
 });
 $('close-fatura-panel').addEventListener('click', closeSheets);
 
-// ---------- CARROSSEL FATURA / TOTAL (arraste com mola + abas clicáveis) ----------
 (function(){
   const wrap = $('hero-track-wrap');
   const track = $('hero-track');
@@ -1376,7 +1352,7 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
         dragging = true;
         track.style.transition = 'none';
       } else {
-        dragging = false; // gesto vertical: deixa a página rolar
+        dragging = false;
       }
     }
     if(!dragging) return;
@@ -1408,8 +1384,6 @@ $('close-fatura-panel').addEventListener('click', closeSheets);
 
   setActiveTab(0);
 })();
-
-// ---------- SETTINGS (aba Ajustes) ----------
 
 function renderSettingsPanel(){
   $('cat-chips').innerHTML = categories.map(c =>
@@ -1471,7 +1445,6 @@ $('new-acc-icon').addEventListener('click', () => {
   });
 });
 $('new-acc-kind').addEventListener('change', () => {
-  // só atualiza o ícone sugerido automaticamente se o usuário ainda não escolheu um na grade
   if($('new-acc-icon').dataset.auto === '1'){
     const icon = ACC_ICONS[$('new-acc-kind').value] || '💳';
     $('new-acc-icon').dataset.icon = icon;
@@ -1479,7 +1452,6 @@ $('new-acc-kind').addEventListener('change', () => {
   }
 });
 
-// ---------- EDITAR CONTA (nome + ícone) ----------
 let accEditId = null;
 window.openAccEdit = id => {
   const a = accounts.find(x => x.id === id);
@@ -1514,7 +1486,6 @@ $('acc-edit-delete').addEventListener('click', async () => {
   await deleteAccount(id);
 });
 
-// ---------- EDITAR CATEGORIA (nome + ícone) ----------
 let catEditId = null;
 const CAT_COLORS = ['despesa','amber','blue','green','pink','teal','purple','gray','coral'];
 function colorSwatchBg(key){ return key === 'despesa' ? 'var(--brand-bg)' : `var(--cc-${key}-bg)`; }
@@ -1587,12 +1558,10 @@ $('pin-remove').addEventListener('click', async () => {
   renderSettingsPanel();
 });
 
-// ---------- SELECTS ----------
 function populateSelects(){
   const catOptions = categories.map(c => ({value:c.id, label:c.name, icon:c.icon||'✳'}));
   const accOptions = accounts.map(a => ({value:a.id, label:a.name, icon:a.icon||'💳'}));
 
-  // Categoria/Conta do formulário de novo gasto (sempre um valor selecionado)
   if(categories.length){
     $('f-categoria').dataset.value = categories[0].id;
     $('f-categoria').innerHTML = `<span class="picker-icon">${categories[0].icon||'✳'}</span><span>${escapeHtml(categories[0].name)}</span>`;
@@ -1604,7 +1573,6 @@ function populateSelects(){
   $('f-categoria').onclick = () => openPicker('f-categoria', 'Categoria', catOptions, () => {});
   $('f-conta').onclick = () => openPicker('f-conta', 'Conta', accOptions, () => { updatePagamentoVisibility(); });
 
-  // Categoria/Conta do filtro de busca (opção "Todas" por padrão)
   const catOptionsAll = [{value:'', label:'Todas', icon:''}].concat(catOptions);
   const accOptionsAll = [{value:'', label:'Todas', icon:''}].concat(accOptions);
   $('s-categoria').onclick = () => openPicker('s-categoria', 'Categoria', catOptionsAll, () => {});
@@ -1620,7 +1588,6 @@ function populateSelects(){
   $('s-ano').onclick = () => openPicker('s-ano', 'Ano', sAnoOptions, () => {});
 }
 
-// ---------- FORM ----------
 $('toggle-form').addEventListener('click', () => {
   editingId = null;
   $('form-title').textContent = 'Novo gasto';
@@ -1662,7 +1629,6 @@ function updateParcelasPreview(){
 }
 $('f-parcelas').addEventListener('input', updateParcelasPreview);
 
-// ---------- CAMPO DE VALOR SEM VÍRGULA ----------
 function formatValorInput(el){
   let digits = el.value.replace(/\D/g,'');
   if(!digits){ el.value = ''; return; }
@@ -1826,7 +1792,6 @@ window.deleteTransaction = async (id) => {
   showToast('Lançamento excluído');
 };
 
-// ---------- SEARCH ----------
 $('toggle-search').addEventListener('click', () => openSheet('search-panel'));
 $('close-search').addEventListener('click', closeSheets);
 $('s-texto').addEventListener('input', () => {
@@ -1852,11 +1817,9 @@ $('s-clear').addEventListener('click', () => {
   render();
 });
 
-// ---------- MONTH NAV ----------
 $('prev-month').addEventListener('click', () => { currentMonth.setMonth(currentMonth.getMonth()-1); render(); });
 $('next-month').addEventListener('click', () => { currentMonth.setMonth(currentMonth.getMonth()+1); render(); });
 
-// ---------- EXPORT ----------
 $('export-btn').addEventListener('click', () => {
   const rows = [['Data','Descrição','Categoria','Conta','Valor','Status']];
   transactions.forEach(t => {
@@ -1872,37 +1835,21 @@ $('export-btn').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// ---------- RENDER ----------
 function catName(id){ const c = categories.find(x=>x.id===id); return c ? c.name : 'Outros'; }
 function catIcon(id){ const c = categories.find(x=>x.id===id); return c ? (c.icon||'✳') : '✳'; }
 function catColorBg(id){ const c = categories.find(x=>x.id===id); return colorSwatchBg((c && c.color) || 'despesa'); }
 function accName(id){ const a = accounts.find(x=>x.id===id); return a ? a.name : '—'; }
 
 function effectiveMonthKey(t){
-  const acc = accounts.find(a => a.id === t.accountId);
-  if(acc && acc.kind === 'credito'){
-    const closingDay = settings.closingDay || 30;
-    const invKey = invoiceKeyFor(t.date, closingDay); // mês em que a fatura fecha
-    const [y,m] = invKey.split('-').map(Number);
-    let py = y, pm = m + 1; // mês seguinte ao fechamento = mês em que você paga
-    if(pm > 12){ pm = 1; py += 1; }
-    return py + '-' + String(pm).padStart(2,'0');
-  }
-  return mk(t.date);
+  return displayDate(t).slice(0, 7);
 }
+
 function monthTx(offset){
   const d = new Date(currentMonth); d.setMonth(d.getMonth()+offset);
   const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   return transactions.filter(t => effectiveMonthKey(t) === key);
 }
 
-// ---------- FATURA (crédito) ----------
-function invoiceKeyFor(dateStr, closingDay){
-  const d = new Date(dateStr+'T00:00:00');
-  let y = d.getFullYear(), m = d.getMonth();
-  if(d.getDate() > closingDay){ m += 1; if(m > 11){ m = 0; y += 1; } }
-  return y + '-' + String(m+1).padStart(2,'0');
-}
 function invoiceLabel(key){
   const [y,m] = key.split('-').map(Number);
   return new Date(y, m-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
@@ -2029,8 +1976,7 @@ function populatePieSelects(){
   const pieAnoOptions = years.map(y=>({value:y, label:String(y)}));
 
   $('pie-mes').dataset.value = pieMonth;
-  $('pie-mes').textContent = monthNames[pieMonth-1];
-  $('pie-ano').dataset.value = pieYear;
+  $('pie-mes').textContent = monthNames[pieMonth-1];$('pie-ano').dataset.value = pieYear;
   $('pie-ano').textContent = pieYear;
 
   $('pie-mes').onclick = () => openPicker('pie-mes', 'Mês', pieMesOptions, (v) => {
@@ -2064,7 +2010,7 @@ function renderCharts(){
 }
 
 function renderDonut(canvasId, legendId, obj, existing){
-  const canvas = $(canvasId); const legendEl = $(legendId);
+  const canvas = $(canvasId); const legendEl =$(legendId);
   const labels = Object.keys(obj); const values = Object.values(obj);
   const total = values.reduce((a,b)=>a+b,0);
   if(labels.length===0){
@@ -2166,7 +2112,6 @@ window.toggleCardExpand = row => {
   const detailsEl = document.getElementById('details-' + row.dataset.list + '-' + row.dataset.id);
   if(!detailsEl) return;
   const willOpen = !detailsEl.classList.contains('open');
-  // só um card expandido por vez
   document.querySelectorAll('.lr-details.open').forEach(el => el.classList.remove('open'));
   if(willOpen) detailsEl.classList.add('open');
 };
@@ -2175,7 +2120,6 @@ function closeExpandedCards(){
 }
 document.addEventListener('click', () => { closeAllSwipes(); });
 
-// ---------- ARRASTAR PRA EDITAR/EXCLUIR ----------
 window.closeAllSwipes = () => {
   document.querySelectorAll('.ledger-row[data-swiped="1"]').forEach(row => {
     row.dataset.swiped = '0';
@@ -2202,14 +2146,14 @@ function initSwipeRows(containerSelector){
       if(e.pointerId !== pid) return;
       const dx = e.clientX - startX, dy = e.clientY - startY;
       if(!decided){
-        if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return; // aguarda intenção clara
+        if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         decided = true;
         if(Math.abs(dx) > Math.abs(dy)){
           dragging = true;
           row.setPointerCapture(pid);
           row.style.transition = 'none';
         } else {
-          dragging = false; // gesto vertical: deixa a página rolar normalmente
+          dragging = false;
         }
       }
       if(!dragging) return;
@@ -2230,20 +2174,11 @@ function initSwipeRows(containerSelector){
         row.style.transition = 'transform .25s cubic-bezier(.22,1.2,.36,1)';
         row.style.transform = 'translateX(' + (shouldOpen ? maxReveal : 0) + 'px)';
         if(shouldOpen && wrap){
-          // Libera o toque nos botões só depois que a animação de revelar (250ms)
-          // termina de verdade. Um tempo fixo é mais confiável que esperar o evento
-          // "transitionend": se o arraste já parar exatamente na posição final, o
-          // navegador não considera que houve mudança de valor e esse evento nunca
-          // dispara — o que deixaria os botões travados para sempre.
           wrap._readyTimer = setTimeout(() => {
             if(row.dataset.swiped === '1') wrap.classList.add('actions-ready');
           }, 260);
         }
       } else if(!decided && !isCancel){
-        // Toque simples, sem arrasto: se a gaveta já estiver aberta, um toque na
-        // linha só fecha ela; caso contrário, alterna a expansão do card.
-        // (um pointercancel — o navegador assumindo o gesto pra rolar a página —
-        // nunca conta como toque simples, mesmo sem termos decidido a direção ainda)
         if(row.dataset.swiped === '1'){
           closeAllSwipes();
         } else {
@@ -2257,17 +2192,14 @@ function initSwipeRows(containerSelector){
   });
 }
 
-// ---------- FEEDBACK (toast central + vibração) ----------
 function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
 function showToast(msg){
-  const t = $('save-toast');
-  $('save-toast-msg').textContent = msg;
+  const t = $('save-toast');$('save-toast-msg').textContent = msg;
   t.classList.add('show');
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(() => t.classList.remove('show'), 1500);
 }
 
-// ---------- CONFIRMAÇÃO CUSTOMIZADA (substitui o confirm() nativo) ----------
 function showConfirm(title, desc, buttons){
   buttons = buttons || [
     {key:'cancel', label:'Cancelar', cls:''},
@@ -2278,11 +2210,9 @@ function showConfirm(title, desc, buttons){
     $('confirm-desc').textContent = desc;
     const row = $('confirm-buttons');
     row.innerHTML = buttons.map(b => `<button class="confirm-btn ${b.cls}" data-key="${b.key}">${b.label}</button>`).join('');
-    $('confirm-modal').classList.add('open');
-    $('confirm-backdrop').classList.add('open');
+    $('confirm-modal').classList.add('open');$('confirm-backdrop').classList.add('open');
     function cleanup(key){
-      $('confirm-modal').classList.remove('open');
-      $('confirm-backdrop').classList.remove('open');
+      $('confirm-modal').classList.remove('open');$('confirm-backdrop').classList.remove('open');
       row.querySelectorAll('button').forEach(b => b.removeEventListener('click', onClick));
       $('confirm-backdrop').removeEventListener('click', onBackdrop);
       resolve(key);
@@ -2294,19 +2224,15 @@ function showConfirm(title, desc, buttons){
   });
 }
 
-// ---------- ALERTA CUSTOMIZADO (substitui o alert() nativo) ----------
 function showAlert(title, desc){
   return showConfirm(title, desc, [{key:'ok', label:'Entendi', cls:''}]);
 }
 
-// ---------- EXTRATO COMPLETO ----------
 let extratoBusca = '';
-$('open-extrato').addEventListener('click', () => {
-  $('extrato-screen').classList.add('open');
+$('open-extrato').addEventListener('click', () => {$('extrato-screen').classList.add('open');
   renderExtrato();
 });
-$('close-extrato').addEventListener('click', () => $('extrato-screen').classList.remove('open'));
-$('extrato-busca').addEventListener('input', e => { extratoBusca = e.target.value.trim().toLowerCase(); renderExtrato(); });
+$('close-extrato').addEventListener('click', () => $('extrato-screen').classList.remove('open'));$('extrato-busca').addEventListener('input', e => { extratoBusca = e.target.value.trim().toLowerCase(); renderExtrato(); });
 
 function renderExtrato(){
   const today = localDateStr();
@@ -2372,8 +2298,7 @@ function renderRecent(){
       });
     }
     list.sort((a,b) => sortKey(b) - sortKey(a));
-    $('lanc-title').textContent = 'Resultados da busca';
-    $('lanc-count').textContent = list.length ? list.length+' item'+(list.length!==1?'s':'') : '';
+    $('lanc-title').textContent = 'Resultados da busca';$('lanc-count').textContent = list.length ? list.length+' item'+(list.length!==1?'s':'') : '';
   } else {
     list = [...transactions].filter(naoCredito).sort((a,b) => sortKey(b) - sortKey(a)).slice(0,5);
     $('lanc-title').textContent = 'Últimos lançamentos';
