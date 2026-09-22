@@ -1,5 +1,5 @@
-const CACHE_NAME = 'controle-financeiro-v2';
-const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'controle-financeiro-v3';
+const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-192-maskable.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
